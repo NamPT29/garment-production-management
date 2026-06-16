@@ -112,24 +112,6 @@ CREATE TABLE IF NOT EXISTS bom_items (
   CONSTRAINT chk_bom_items_waste CHECK (waste_rate_percent >= 0 AND waste_rate_percent <= 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS inventory_balances (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  warehouse_id BIGINT UNSIGNED NOT NULL,
-  material_id BIGINT UNSIGNED NOT NULL,
-  quantity_on_hand DECIMAL(15, 4) NOT NULL DEFAULT 0,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_inventory_balances_warehouse_material (warehouse_id, material_id),
-  KEY idx_inventory_balances_warehouse_material (warehouse_id, material_id),
-  CONSTRAINT fk_inventory_balances_warehouse
-    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id)
-    ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT fk_inventory_balances_material
-    FOREIGN KEY (material_id) REFERENCES materials(id)
-    ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT chk_inventory_balances_qty CHECK (quantity_on_hand >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS inventory_transactions (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   transaction_code VARCHAR(50) NOT NULL,

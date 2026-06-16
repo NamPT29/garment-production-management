@@ -2,6 +2,24 @@ import { query } from '../../config/database.js';
 
 const allowedSortFields = new Set(['warehouse_code', 'warehouse_name', 'created_at', 'updated_at']);
 
+const stockSql = `
+  SELECT
+    it.warehouse_id,
+    iti.material_id,
+    SUM(
+      CASE
+        WHEN it.transaction_type IN ('RECEIPT', 'ADJUSTMENT_IN') THEN iti.quantity
+        WHEN it.transaction_type IN ('ISSUE', 'ADJUSTMENT_OUT') THEN -iti.quantity
+        ELSE 0
+      END
+    ) AS quantity_on_hand,
+    MAX(it.updated_at) AS updated_at
+  FROM inventory_transactions it
+  INNER JOIN inventory_transaction_items iti ON iti.inventory_transaction_id = it.id
+  WHERE it.status = 'POSTED'
+  GROUP BY it.warehouse_id, iti.material_id
+`;
+
 const mapWarehouse = (row) => {
   if (!row) {
     return null;
@@ -94,7 +112,7 @@ export const warehouseRepository = {
 
   async findBalances(warehouseId, filters) {
     const { page, limit, skip, search, category, lowStock } = filters;
-    const conditions = ['inventory_balances.warehouse_id = ?'];
+    const conditions = ['stock.warehouse_id = ?'];
     const params = [warehouseId];
 
     if (search) {
@@ -107,7 +125,7 @@ export const warehouseRepository = {
       params.push(category);
     }
     if (lowStock === true) {
-      conditions.push('inventory_balances.quantity_on_hand <= m.minimum_stock');
+      conditions.push('COALESCE(stock.quantity_on_hand, 0) <= m.minimum_stock');
     }
 
     const whereSql = `WHERE ${conditions.join(' AND ')}`;
@@ -116,15 +134,18 @@ export const warehouseRepository = {
 
     const rows = await query(
       `
-        SELECT 
-          inventory_balances.*,
+        SELECT
+          stock.warehouse_id,
+          stock.material_id,
+          COALESCE(stock.quantity_on_hand, 0) AS quantity_on_hand,
+          stock.updated_at,
           m.material_code,
           m.material_name,
           m.category,
           m.unit,
           m.minimum_stock
-        FROM inventory_balances
-        INNER JOIN materials m ON m.id = inventory_balances.material_id
+        FROM (${stockSql}) stock
+        INNER JOIN materials m ON m.id = stock.material_id
         ${whereSql}
         ORDER BY m.material_code ASC
         LIMIT ${safeLimit} OFFSET ${safeSkip}
@@ -135,8 +156,8 @@ export const warehouseRepository = {
     const countRows = await query(
       `
         SELECT COUNT(*) AS total
-        FROM inventory_balances
-        INNER JOIN materials m ON m.id = inventory_balances.material_id
+        FROM (${stockSql}) stock
+        INNER JOIN materials m ON m.id = stock.material_id
         ${whereSql}
       `,
       params,
@@ -144,7 +165,7 @@ export const warehouseRepository = {
 
     return {
       items: rows.map((row) => ({
-        id: row.id,
+        id: row.material_id,
         warehouseId: row.warehouse_id,
         materialId: row.material_id,
         quantityOnHand: Number(row.quantity_on_hand ?? 0),

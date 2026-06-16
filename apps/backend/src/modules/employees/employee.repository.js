@@ -60,12 +60,8 @@ export const employeeRepository = {
     // Join with active assignment to get current line
     const rows = await query(
       `
-        SELECT e.*, pl.id AS current_line_id, pl.line_name AS current_line_name
+        SELECT e.*, NULL AS current_line_id, NULL AS current_line_name
         FROM employees e
-        LEFT JOIN line_employee_assignments la ON la.employee_id = e.id 
-          AND la.is_primary = TRUE 
-          AND (la.assigned_to IS NULL OR la.assigned_to >= CURDATE())
-        LEFT JOIN production_lines pl ON pl.id = la.production_line_id
         ${whereSql}
         ORDER BY e.employee_code ASC
         LIMIT ${safeLimit} OFFSET ${safeSkip}
@@ -93,12 +89,8 @@ export const employeeRepository = {
   async findById(id) {
     const rows = await query(
       `
-        SELECT e.*, pl.id AS current_line_id, pl.line_name AS current_line_name
+        SELECT e.*, NULL AS current_line_id, NULL AS current_line_name
         FROM employees e
-        LEFT JOIN line_employee_assignments la ON la.employee_id = e.id 
-          AND la.is_primary = TRUE 
-          AND (la.assigned_to IS NULL OR la.assigned_to >= CURDATE())
-        LEFT JOIN production_lines pl ON pl.id = la.production_line_id
         WHERE e.id = ?
         LIMIT 1
       `,
@@ -164,69 +156,17 @@ export const employeeRepository = {
     return this.findById(id);
   },
 
-  async getActivePrimaryAssignment(employeeId) {
-    const rows = await query(
-      `
-        SELECT * FROM line_employee_assignments
-        WHERE employee_id = ? AND is_primary = TRUE AND (assigned_to IS NULL OR assigned_to >= CURDATE())
-        LIMIT 1
-      `,
-      [employeeId]
-    );
-    return rows[0] ?? null;
+  async getActivePrimaryAssignment() {
+    return null;
   },
 
-  async assignToLine(data, userId) {
-    const result = await query(
-      `
-        INSERT INTO line_employee_assignments (production_line_id, employee_id, assigned_from, assigned_to, is_primary, notes, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        data.productionLineId,
-        data.employeeId,
-        toDateString(data.assignedFrom),
-        toDateString(data.assignedTo),
-        data.isPrimary ?? true,
-        data.notes ?? null,
-        userId,
-      ]
-    );
-    return result.insertId;
+  async assignToLine() {
+    return 0;
   },
 
-  async getAssignmentHistory(employeeId) {
-    const rows = await query(
-      `
-        SELECT la.*, pl.line_code, pl.line_name
-        FROM line_employee_assignments la
-        INNER JOIN production_lines pl ON pl.id = la.production_line_id
-        WHERE la.employee_id = ?
-        ORDER BY la.assigned_from DESC, la.id DESC
-      `,
-      [employeeId]
-    );
-    return rows.map((row) => ({
-      id: row.id,
-      productionLineId: row.production_line_id,
-      lineCode: row.line_code,
-      lineName: row.line_name,
-      assignedFrom: toDateString(row.assigned_from),
-      assignedTo: toDateString(row.assigned_to),
-      isPrimary: Boolean(row.is_primary),
-      notes: row.notes,
-      createdAt: row.created_at,
-    }));
+  async getAssignmentHistory() {
+    return [];
   },
 
-  async endActiveAssignment(assignmentId, date) {
-    await query(
-      `
-        UPDATE line_employee_assignments
-        SET assigned_to = ?
-        WHERE id = ?
-      `,
-      [toDateString(date), assignmentId]
-    );
-  },
+  async endActiveAssignment() {},
 };

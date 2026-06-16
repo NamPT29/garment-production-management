@@ -62,10 +62,17 @@ export const materialRequirementService = {
       const placeholders = materialIds.map(() => '?').join(', ');
       const stockRows = await query(
         `
-          SELECT material_id, SUM(quantity_on_hand) AS total_stock
-          FROM inventory_balances
-          WHERE material_id IN (${placeholders})
-          GROUP BY material_id
+          SELECT iti.material_id, SUM(
+            CASE
+              WHEN it.transaction_type IN ('RECEIPT', 'ADJUSTMENT_IN') THEN iti.quantity
+              WHEN it.transaction_type IN ('ISSUE', 'ADJUSTMENT_OUT') THEN -iti.quantity
+              ELSE 0
+            END
+          ) AS total_stock
+          FROM inventory_transactions it
+          INNER JOIN inventory_transaction_items iti ON iti.inventory_transaction_id = it.id
+          WHERE it.status = 'POSTED' AND iti.material_id IN (${placeholders})
+          GROUP BY iti.material_id
         `,
         materialIds,
       );

@@ -95,26 +95,7 @@ export const productionLineRepository = {
     return this.findById(id);
   },
 
-  async getActiveEmployees(lineId) {
-    const rows = await query(
-      `
-        SELECT e.*, la.assigned_from, la.is_primary
-        FROM line_employee_assignments la
-        INNER JOIN employees e ON e.id = la.employee_id
-        WHERE la.production_line_id = ? AND (la.assigned_to IS NULL OR la.assigned_to >= CURDATE())
-          AND e.status = 'ACTIVE'
-      `,
-      [lineId]
-    );
-    return rows.map((row) => ({
-      id: row.id,
-      employeeCode: row.employee_code,
-      fullName: row.full_name,
-      position: row.position,
-      skillLevel: row.skill_level,
-      status: row.status,
-      assignedFrom: row.assigned_from,
-      isPrimary: Boolean(row.is_primary),
-    }));
+  async getActiveEmployees() {
+    return [];
   },
 };

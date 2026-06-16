@@ -278,40 +278,6 @@ const run = async () => {
       );
     }
 
-    for (const [code, name] of permissions) {
-      await connection.execute(
-        `
-          INSERT INTO permissions (code, name)
-          VALUES (?, ?)
-          ON DUPLICATE KEY UPDATE name = VALUES(name)
-        `,
-        [code, name],
-      );
-    }
-
-    await connection.execute(`
-      INSERT IGNORE INTO role_permissions (role_id, permission_id)
-      SELECT roles.id, permissions.id
-      FROM roles
-      CROSS JOIN permissions
-      WHERE roles.code = 'ADMIN'
-    `);
-
-    for (const [roleCode, permissionCodes] of Object.entries(rolePermissionMap)) {
-      for (const permissionCode of permissionCodes) {
-        await connection.execute(
-          `
-            INSERT IGNORE INTO role_permissions (role_id, permission_id)
-            SELECT roles.id, permissions.id
-            FROM roles
-            INNER JOIN permissions ON permissions.code = ?
-            WHERE roles.code = ?
-          `,
-          [permissionCode, roleCode],
-        );
-      }
-    }
-
     const [adminRoles] = await connection.execute('SELECT id FROM roles WHERE code = ?', ['ADMIN']);
     const adminRole = adminRoles[0];
     const passwordHash = await bcrypt.hash(env.DEV_ADMIN_PASSWORD, 10);
@@ -597,14 +563,7 @@ const run = async () => {
           item,
         );
 
-        await connection.execute(
-          `
-            INSERT INTO inventory_balances (warehouse_id, material_id, quantity_on_hand)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE quantity_on_hand = quantity_on_hand + VALUES(quantity_on_hand)
-          `,
-          [warehouseMap['WH-MAIN'], item[1], item[2]],
-        );
+
       }
     }
 
@@ -638,14 +597,7 @@ const run = async () => {
           item,
         );
 
-        await connection.execute(
-          `
-            INSERT INTO inventory_balances (warehouse_id, material_id, quantity_on_hand)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE quantity_on_hand = quantity_on_hand + VALUES(quantity_on_hand)
-          `,
-          [warehouseMap['WH-SUB'], item[1], item[2]],
-        );
+
       }
     }
 
@@ -689,13 +641,7 @@ const run = async () => {
         );
       }
 
-      await connection.execute(
-        `
-          INSERT INTO order_status_histories (order_id, from_status, to_status, changed_by, change_note)
-          VALUES (?, NULL, 'DRAFT', ?, ?)
-        `,
-        [orderResult.insertId, adminUser.id, 'Tao don hang mau'],
-      );
+
     }
 
     // === Phase 4 Seed Data ===
@@ -818,38 +764,6 @@ const run = async () => {
     const [empRows] = await connection.execute('SELECT id, employee_code FROM employees');
     const empMap = Object.fromEntries(empRows.map((r) => [r.employee_code, r.id]));
 
-    // 5. Seed Line Employee Assignments (Primary Assignments)
-    const [existingLineAssignments] = await connection.execute('SELECT COUNT(*) as count FROM line_employee_assignments');
-    if (existingLineAssignments[0].count === 0) {
-      const assignments = [
-        [lineMap['PL-001'], empMap['EMP-001'], '2026-01-01', true, 'Leader chuyen 1', adminUser.id],
-        [lineMap['PL-001'], empMap['EMP-002'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
-        [lineMap['PL-001'], empMap['EMP-003'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
-        [lineMap['PL-001'], empMap['EMP-004'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
-        [lineMap['PL-001'], empMap['EMP-005'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
-        [lineMap['PL-001'], empMap['EMP-006'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
-        [lineMap['PL-001'], empMap['EMP-007'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
-        [lineMap['PL-001'], empMap['EMP-008'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
-        [lineMap['PL-001'], empMap['EMP-009'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
-        [lineMap['PL-002'], empMap['EMP-010'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
-        [lineMap['PL-002'], empMap['EMP-011'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
-        [lineMap['PL-002'], empMap['EMP-012'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
-        [lineMap['PL-002'], empMap['EMP-013'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
-        [lineMap['PL-002'], empMap['EMP-014'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
-        [lineMap['PL-002'], empMap['EMP-015'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
-        [lineMap['PL-002'], empMap['EMP-016'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id]
-      ];
-      for (const assign of assignments) {
-        await connection.execute(
-          `
-            INSERT INTO line_employee_assignments (production_line_id, employee_id, assigned_from, is_primary, notes, created_by)
-            VALUES (?, ?, ?, ?, ?, ?)
-          `,
-          assign
-        );
-      }
-    }
-
     // 6. Seed Product Operations Flow for PRO-DEMO-001 (Ao so mi demo)
     const [demoProductRows] = await connection.execute('SELECT id FROM products WHERE product_code = ?', ['PRO-DEMO-001']);
     if (demoProductRows[0]) {
@@ -901,120 +815,50 @@ const run = async () => {
         poId = existingPO[0].id;
       }
 
-      // 8. Seed Production Allocations (allocate 60 to PL-001, 40 to PL-002)
-      const [existingAlloc] = await connection.execute('SELECT COUNT(*) as count FROM production_allocations WHERE production_order_id = ?', [poId]);
-      let allocId1, allocId2;
-      if (existingAlloc[0].count === 0) {
-        const [allocRes1] = await connection.execute(
-          `
-            INSERT INTO production_allocations (production_order_id, production_line_id, allocated_quantity, planned_start_date, planned_end_date, status, created_by)
-            VALUES (?, ?, 60, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY), 'PLANNED', ?)
-          `,
-          [poId, lineMap['PL-001'], adminUser.id]
-        );
-        allocId1 = allocRes1.insertId;
-
-        const [allocRes2] = await connection.execute(
-          `
-            INSERT INTO production_allocations (production_order_id, production_line_id, allocated_quantity, planned_start_date, planned_end_date, status, created_by)
-            VALUES (?, ?, 40, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY), 'PLANNED', ?)
-          `,
-          [poId, lineMap['PL-002'], adminUser.id]
-        );
-        allocId2 = allocRes2.insertId;
-      } else {
-        const [allocRows] = await connection.execute('SELECT id, production_line_id FROM production_allocations WHERE production_order_id = ?', [poId]);
-        const allocMap = Object.fromEntries(allocRows.map(r => [r.production_line_id, r.id]));
-        allocId1 = allocMap[lineMap['PL-001']];
-        allocId2 = allocMap[lineMap['PL-002']];
-      }
-
-      // 9. Seed Production Schedules
-      const [existingSched] = await connection.execute('SELECT COUNT(*) as count FROM production_schedules WHERE production_allocation_id IN (?, ?)', [allocId1, allocId2]);
-      let schedId1, schedId2;
+      // 8. Seed Production Schedules directly for optimized schema
+      const [existingSched] = await connection.execute('SELECT COUNT(*) as count FROM production_schedules WHERE production_order_id = ?', [poId]);
+      let schedId1;
       if (existingSched[0].count === 0) {
         const [schedRes1] = await connection.execute(
           `
-            INSERT INTO production_schedules (production_allocation_id, production_line_id, shift_id, schedule_date, target_quantity, planned_workers, status, created_by)
-            VALUES (?, ?, ?, CURDATE(), 20, 5, 'CONFIRMED', ?)
+            INSERT INTO production_schedules (
+              production_order_id, production_line_id, shift_id, schedule_date, allocated_quantity, target_quantity,
+              planned_workers, planned_start_date, planned_end_date, status, created_by, updated_by
+            )
+            VALUES (?, ?, ?, CURDATE(), 60, 20, 5, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY), 'CONFIRMED', ?, ?)
           `,
-          [allocId1, lineMap['PL-001'], shiftMap['SH-MORNING'], adminUser.id]
+          [poId, lineMap['PL-001'], shiftMap['SH-MORNING'], adminUser.id, adminUser.id]
         );
         schedId1 = schedRes1.insertId;
 
-        const [schedRes2] = await connection.execute(
+        await connection.execute(
           `
-            INSERT INTO production_schedules (production_allocation_id, production_line_id, shift_id, schedule_date, target_quantity, planned_workers, status, created_by)
-            VALUES (?, ?, ?, CURDATE(), 15, 5, 'CONFIRMED', ?)
+            INSERT INTO production_schedules (
+              production_order_id, production_line_id, shift_id, schedule_date, allocated_quantity, target_quantity,
+              planned_workers, planned_start_date, planned_end_date, status, created_by, updated_by
+            )
+            VALUES (?, ?, ?, CURDATE(), 40, 15, 5, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY), 'CONFIRMED', ?, ?)
           `,
-          [allocId2, lineMap['PL-002'], shiftMap['SH-MORNING'], adminUser.id]
+          [poId, lineMap['PL-002'], shiftMap['SH-MORNING'], adminUser.id, adminUser.id]
         );
-        schedId2 = schedRes2.insertId;
 
-        // 10. Seed Schedule Employee Assignments
-        const sched1Assignments = [
-          [schedId1, empMap['EMP-002'], opMap['OP-CUT'], 20, adminUser.id],
-          [schedId1, empMap['EMP-003'], opMap['OP-SEW-COLLAR'], 20, adminUser.id],
-          [schedId1, empMap['EMP-004'], opMap['OP-SEW-SLEEVE'], 20, adminUser.id],
-          [schedId1, empMap['EMP-005'], opMap['OP-SEW-BODY'], 20, adminUser.id],
-          [schedId1, empMap['EMP-006'], opMap['OP-BUTTON'], 20, adminUser.id]
-        ];
-        for (const sa of sched1Assignments) {
-          await connection.execute(
-            `
-              INSERT INTO schedule_employee_assignments (production_schedule_id, employee_id, operation_id, assigned_quantity, created_by)
-              VALUES (?, ?, ?, ?, ?)
-            `,
-            sa
-          );
-        }
-
-        // 11. Seed Production Outputs
-        const [outRes1] = await connection.execute(
+        await connection.execute(
           `
             INSERT INTO production_outputs (production_schedule_id, production_order_id, production_line_id, shift_id, output_date, good_quantity, defect_quantity, rework_quantity, working_minutes, downtime_minutes, recorded_by)
             VALUES (?, ?, ?, ?, CURDATE(), 18, 2, 1, 480, 20, ?)
           `,
           [schedId1, poId, lineMap['PL-001'], shiftMap['SH-MORNING'], adminUser.id]
         );
-        const outId1 = outRes1.insertId;
 
-        // 12. Seed Employee Outputs
-        const empOutputs = [
-          [outId1, empMap['EMP-002'], opMap['OP-CUT'], 20, 0, 480],
-          [outId1, empMap['EMP-003'], opMap['OP-SEW-COLLAR'], 18, 2, 480],
-          [outId1, empMap['EMP-004'], opMap['OP-SEW-SLEEVE'], 19, 1, 480],
-          [outId1, empMap['EMP-005'], opMap['OP-SEW-BODY'], 18, 2, 480],
-          [outId1, empMap['EMP-006'], opMap['OP-BUTTON'], 20, 0, 480]
-        ];
-        for (const eo of empOutputs) {
-          await connection.execute(
-            `
-              INSERT INTO employee_outputs (production_output_id, employee_id, operation_id, good_quantity, defect_quantity, working_minutes)
-              VALUES (?, ?, ?, ?, ?, ?)
-            `,
-            eo
-          );
-        }
-
-        // Update production order completed quantity to 18
         await connection.execute(
           `
-            UPDATE production_orders 
+            UPDATE production_orders
             SET completed_quantity = 18, rejected_quantity = 2, status = 'IN_PROGRESS', actual_start_date = CURDATE()
             WHERE id = ?
           `,
           [poId]
         );
-
-        // 13. Seed Production Progress Snapshots
-        await connection.execute(
-          `
-            INSERT INTO production_progress_snapshots (production_order_id, snapshot_date, planned_quantity, completed_quantity, remaining_quantity, progress_percent, expected_progress_percent, delay_quantity, status)
-            VALUES (?, CURDATE(), 100, 18, 82, 18.00, 14.28, 0, 'ON_TRACK')
-          `,
-          [poId]
-        );
+      }
       }
     }
 

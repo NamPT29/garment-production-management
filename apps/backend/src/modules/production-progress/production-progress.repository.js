@@ -2,27 +2,63 @@ import { query } from '../../config/database.js';
 
 const toDateString = (val) => (val ? new Date(val).toISOString().slice(0, 10) : null);
 
+const mapProgressRow = (r) => {
+  const plannedQuantity = Number(r.planned_quantity ?? 0);
+  const completedQuantity = Number(r.completed_quantity ?? 0);
+  const remainingQuantity = Math.max(plannedQuantity - completedQuantity, 0);
+  const progressPercent = plannedQuantity > 0 ? Number(((completedQuantity / plannedQuantity) * 100).toFixed(2)) : 0;
+  const today = new Date();
+  const start = r.planned_start_date ? new Date(r.planned_start_date) : today;
+  const end = r.planned_end_date ? new Date(r.planned_end_date) : today;
+  const totalMs = Math.max(end - start, 1);
+  const elapsedMs = Math.min(Math.max(today - start, 0), totalMs);
+  const expectedProgressPercent = Number(((elapsedMs / totalMs) * 100).toFixed(2));
+  const expectedCompleted = Math.round((expectedProgressPercent / 100) * plannedQuantity);
+  const delayQuantity = Math.max(expectedCompleted - completedQuantity, 0);
+  let status = 'ON_TRACK';
+
+  if (r.status === 'COMPLETED') {
+    status = 'COMPLETED';
+  } else if (delayQuantity > 0 && progressPercent < expectedProgressPercent - 10) {
+    status = 'DELAYED';
+  } else if (delayQuantity > 0) {
+    status = 'AT_RISK';
+  }
+
+  return {
+    id: r.id,
+    productionOrderId: r.id,
+    productionOrderCode: r.production_order_code,
+    productName: r.product_name,
+    snapshotDate: toDateString(new Date()),
+    plannedQuantity,
+    completedQuantity,
+    remainingQuantity,
+    progressPercent,
+    expectedProgressPercent,
+    delayQuantity,
+    status,
+  };
+};
+
 export const productionProgressRepository = {
   async getDashboardSummary() {
-    // 1. Active production orders
     const activeOrdersRows = await query(
       `SELECT COUNT(*) AS total FROM production_orders WHERE status IN ('RELEASED', 'IN_PROGRESS', 'PAUSED')`
     );
     const activeOrders = Number(activeOrdersRows[0]?.total ?? 0);
 
-    // 2. Completed orders this month
     const completedOrdersRows = await query(
       `
-        SELECT COUNT(*) AS total 
-        FROM production_orders 
-        WHERE status = 'COMPLETED' 
-          AND MONTH(actual_end_date) = MONTH(CURDATE()) 
+        SELECT COUNT(*) AS total
+        FROM production_orders
+        WHERE status = 'COMPLETED'
+          AND MONTH(actual_end_date) = MONTH(CURDATE())
           AND YEAR(actual_end_date) = YEAR(CURDATE())
       `
     );
     const completedOrdersThisMonth = Number(completedOrdersRows[0]?.total ?? 0);
 
-    // 3. Today's outputs
     const todayOutputRows = await query(
       `
         SELECT COALESCE(SUM(good_quantity), 0) AS total_good, COALESCE(SUM(defect_quantity), 0) AS total_defect
@@ -33,7 +69,6 @@ export const productionProgressRepository = {
     const todayGood = Number(todayOutputRows[0]?.total_good ?? 0);
     const todayDefect = Number(todayOutputRows[0]?.total_defect ?? 0);
 
-    // 4. Overdue orders count (planned_end_date < today and status not COMPLETED/CANCELLED)
     const overdueOrdersRows = await query(
       `
         SELECT COUNT(*) AS total
@@ -43,7 +78,6 @@ export const productionProgressRepository = {
     );
     const overdueOrders = Number(overdueOrdersRows[0]?.total ?? 0);
 
-    // 5. Overall Defect rate
     const defectRateRows = await query(
       `
         SELECT COALESCE(SUM(good_quantity), 0) AS total_good, COALESCE(SUM(defect_quantity), 0) AS total_defect
@@ -71,10 +105,10 @@ export const productionProgressRepository = {
         SELECT pl.id, pl.line_code, pl.line_name,
                COALESCE(SUM(po.good_quantity * p.standard_time_minutes), 0) AS standard_minutes_produced,
                COALESCE(SUM(po.working_minutes), 0) AS total_working_minutes,
-               CASE 
-                 WHEN SUM(po.working_minutes) > 0 THEN 
+               CASE
+                 WHEN SUM(po.working_minutes) > 0 THEN
                    ROUND((SUM(po.good_quantity * p.standard_time_minutes) / SUM(po.working_minutes)) * 100, 2)
-                 ELSE 0 
+                 ELSE 0
                END AS efficiency_percent
         FROM production_lines pl
         LEFT JOIN production_outputs po ON po.production_line_id = pl.id
@@ -97,19 +131,10 @@ export const productionProgressRepository = {
   async getWorkerProductivity() {
     const rows = await query(
       `
-        SELECT e.id, e.employee_code, e.full_name, e.position,
-               COALESCE(SUM(eo.good_quantity * o.standard_time_seconds), 0) AS standard_seconds_produced,
-               COALESCE(SUM(eo.working_minutes * 60), 0) AS total_working_seconds,
-               CASE 
-                 WHEN SUM(eo.working_minutes * 60) > 0 THEN 
-                   ROUND((SUM(eo.good_quantity * o.standard_time_seconds) / SUM(eo.working_minutes * 60)) * 100, 2)
-                 ELSE 0 
-               END AS productivity_percent
-        FROM employees e
-        LEFT JOIN employee_outputs eo ON eo.employee_id = e.id
-        LEFT JOIN operations o ON o.id = eo.operation_id
-        GROUP BY e.id, e.employee_code, e.full_name, e.position
-        ORDER BY productivity_percent DESC
+        SELECT id, employee_code, full_name, position
+        FROM employees
+        WHERE status = 'ACTIVE'
+        ORDER BY employee_code ASC
         LIMIT 20
       `
     );
@@ -118,64 +143,34 @@ export const productionProgressRepository = {
       employeeCode: r.employee_code,
       fullName: r.full_name,
       position: r.position,
-      productivityPercent: Number(r.productivity_percent),
+      productivityPercent: 0,
     }));
   },
 
   async getLatestProgressSnapshots() {
     const rows = await query(
       `
-        SELECT pps.*, po.production_order_code, p.product_name
-        FROM production_progress_snapshots pps
-        INNER JOIN production_orders po ON po.id = pps.production_order_id
+        SELECT po.*, p.product_name
+        FROM production_orders po
         INNER JOIN products p ON p.id = po.product_id
-        INNER JOIN (
-          SELECT production_order_id, MAX(id) as max_id
-          FROM production_progress_snapshots
-          GROUP BY production_order_id
-        ) latest ON latest.max_id = pps.id
-        ORDER BY pps.snapshot_date DESC
+        WHERE po.status != 'CANCELLED'
+        ORDER BY po.updated_at DESC
       `
     );
-    return rows.map((r) => ({
-      id: r.id,
-      productionOrderId: r.production_order_id,
-      productionOrderCode: r.production_order_code,
-      productName: r.product_name,
-      snapshotDate: toDateString(r.snapshot_date),
-      plannedQuantity: Number(r.planned_quantity),
-      completedQuantity: Number(r.completed_quantity),
-      remainingQuantity: Number(r.remaining_quantity),
-      progressPercent: Number(r.progress_percent),
-      expectedProgressPercent: Number(r.expected_progress_percent),
-      delayQuantity: Number(r.delay_quantity),
-      status: r.status,
-    }));
+    return rows.map(mapProgressRow);
   },
 
   async getProgressHistoryByOrder(orderId) {
     const rows = await query(
       `
-        SELECT pps.*, po.production_order_code
-        FROM production_progress_snapshots pps
-        INNER JOIN production_orders po ON po.id = pps.production_order_id
-        WHERE pps.production_order_id = ?
-        ORDER BY pps.snapshot_date ASC
+        SELECT po.*, p.product_name
+        FROM production_orders po
+        INNER JOIN products p ON p.id = po.product_id
+        WHERE po.id = ?
+        LIMIT 1
       `,
       [orderId]
     );
-    return rows.map((r) => ({
-      id: r.id,
-      productionOrderId: r.production_order_id,
-      productionOrderCode: r.production_order_code,
-      snapshotDate: toDateString(r.snapshot_date),
-      plannedQuantity: Number(r.planned_quantity),
-      completedQuantity: Number(r.completed_quantity),
-      remainingQuantity: Number(r.remaining_quantity),
-      progressPercent: Number(r.progress_percent),
-      expectedProgressPercent: Number(r.expected_progress_percent),
-      delayQuantity: Number(r.delay_quantity),
-      status: r.status,
-    }));
+    return rows[0] ? [mapProgressRow(rows[0])] : [];
   },
 };

@@ -1,6 +1,19 @@
 import { query } from '../../config/database.js';
 
-const mapUser = (row, permissions = []) => {
+const rolePermissions = {
+  ADMIN: ['*'],
+  FACTORY_MANAGER: ['PRODUCTION_PLAN_VIEW', 'PRODUCTION_PLAN_CREATE', 'PRODUCTION_PLAN_UPDATE', 'PRODUCTION_PLAN_ASSIGN_EMPLOYEE'],
+  PRODUCTION_MANAGER: ['PRODUCTION_PLAN_VIEW', 'PRODUCTION_PLAN_CREATE', 'PRODUCTION_PLAN_UPDATE', 'PRODUCTION_PLAN_ASSIGN_EMPLOYEE'],
+  LINE_LEADER: ['PRODUCTION_PLAN_VIEW', 'PRODUCTION_PLAN_ASSIGN_EMPLOYEE'],
+  QC: ['PRODUCTION_PLAN_VIEW'],
+  WAREHOUSE: ['INVENTORY_VIEW', 'INVENTORY_CREATE', 'INVENTORY_UPDATE'],
+  TECHNICIAN: ['PRODUCTION_PLAN_VIEW'],
+  HR: ['EMPLOYEE_VIEW', 'EMPLOYEE_CREATE', 'EMPLOYEE_UPDATE'],
+  ACCOUNTANT: ['INVENTORY_VIEW'],
+  WORKER: ['PRODUCTION_PLAN_VIEW'],
+};
+
+const mapUser = (row) => {
   if (!row) {
     return null;
   }
@@ -13,23 +26,8 @@ const mapUser = (row, permissions = []) => {
     passwordHash: row.password_hash,
     isLocked: Boolean(row.is_locked),
     roles: row.role_code ? [row.role_code] : [],
-    permissions,
+    permissions: rolePermissions[row.role_code] ?? [],
   };
-};
-
-const getPermissionsByRoleId = async (roleId) => {
-  const rows = await query(
-    `
-      SELECT permissions.code
-      FROM permissions
-      INNER JOIN role_permissions ON role_permissions.permission_id = permissions.id
-      WHERE role_permissions.role_id = ?
-      ORDER BY permissions.code ASC
-    `,
-    [roleId],
-  );
-
-  return rows.map((row) => row.code);
 };
 
 export const userRepository = {
@@ -45,13 +43,7 @@ export const userRepository = {
       [identifier, identifier],
     );
 
-    const row = rows[0];
-    if (!row) {
-      return null;
-    }
-
-    const permissions = await getPermissionsByRoleId(row.role_id);
-    return mapUser(row, permissions);
+    return mapUser(rows[0]);
   },
 
   async findByIdWithAccess(userId) {
@@ -66,13 +58,7 @@ export const userRepository = {
       [userId],
     );
 
-    const row = rows[0];
-    if (!row) {
-      return null;
-    }
-
-    const permissions = await getPermissionsByRoleId(row.role_id);
-    return mapUser(row, permissions);
+    return mapUser(rows[0]);
   },
 
   async updateLastLogin(userId) {

@@ -102,21 +102,3 @@ CREATE TABLE IF NOT EXISTS order_items (
   CONSTRAINT chk_order_items_unit_price_non_negative CHECK (unit_price >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS order_status_histories (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  order_id BIGINT UNSIGNED NOT NULL,
-  from_status VARCHAR(30) NULL,
-  to_status VARCHAR(30) NOT NULL,
-  changed_by BIGINT UNSIGNED NULL,
-  change_note TEXT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_order_status_histories_order_id (order_id),
-  KEY idx_order_status_histories_changed_by (changed_by),
-  CONSTRAINT fk_order_status_histories_order
-    FOREIGN KEY (order_id) REFERENCES orders(id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_order_status_histories_changed_by
-    FOREIGN KEY (changed_by) REFERENCES users(id)
-    ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,6 +1,24 @@
 import { query, transaction } from '../../config/database.js';
 
 const allowedBalanceSortFields = new Set(['quantity_on_hand', 'updated_at']);
+
+const stockSql = `
+  SELECT
+    it.warehouse_id,
+    iti.material_id,
+    SUM(
+      CASE
+        WHEN it.transaction_type IN ('RECEIPT', 'ADJUSTMENT_IN') THEN iti.quantity
+        WHEN it.transaction_type IN ('ISSUE', 'ADJUSTMENT_OUT') THEN -iti.quantity
+        ELSE 0
+      END
+    ) AS quantity_on_hand,
+    MAX(it.updated_at) AS updated_at
+  FROM inventory_transactions it
+  INNER JOIN inventory_transaction_items iti ON iti.inventory_transaction_id = it.id
+  WHERE it.status = 'POSTED'
+  GROUP BY it.warehouse_id, iti.material_id
+`;
 const allowedTxSortFields = new Set(['transaction_code', 'transaction_date', 'created_at', 'updated_at']);
 const toDateString = (value) => new Date(value).toISOString().slice(0, 10);
 
@@ -96,11 +114,11 @@ export const inventoryRepository = {
       params.push(like, like, like);
     }
     if (warehouseId !== undefined) {
-      conditions.push('inventory_balances.warehouse_id = ?');
+      conditions.push('stock.warehouse_id = ?');
       params.push(warehouseId);
     }
     if (materialId !== undefined) {
-      conditions.push('inventory_balances.material_id = ?');
+      conditions.push('stock.material_id = ?');
       params.push(materialId);
     }
     if (category) {
@@ -108,19 +126,24 @@ export const inventoryRepository = {
       params.push(category);
     }
     if (lowStock === true) {
-      conditions.push('inventory_balances.quantity_on_hand <= m.minimum_stock');
+      conditions.push('COALESCE(stock.quantity_on_hand, 0) <= m.minimum_stock');
     }
 
     const whereSql = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const safeSortBy = allowedBalanceSortFields.has(sortBy) ? `inventory_balances.${sortBy}` : 'inventory_balances.updated_at';
+    const safeSortBy = allowedBalanceSortFields.has(sortBy) ? sortBy : 'updated_at';
+    const safeSortExpr = safeSortBy === 'quantity_on_hand' ? 'quantity_on_hand' : 'updated_at';
     const safeSortOrder = String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
     const safeLimit = Number(limit);
     const safeSkip = Number(skip);
 
     const rows = await query(
       `
-        SELECT 
-          inventory_balances.*,
+        SELECT
+          stock.warehouse_id AS id,
+          stock.warehouse_id,
+          stock.material_id,
+          COALESCE(stock.quantity_on_hand, 0) AS quantity_on_hand,
+          stock.updated_at,
           w.warehouse_code,
           w.warehouse_name,
           m.material_code,
@@ -128,11 +151,11 @@ export const inventoryRepository = {
           m.category,
           m.unit,
           m.minimum_stock
-        FROM inventory_balances
-        INNER JOIN warehouses w ON w.id = inventory_balances.warehouse_id
-        INNER JOIN materials m ON m.id = inventory_balances.material_id
+        FROM (${stockSql}) stock
+        INNER JOIN warehouses w ON w.id = stock.warehouse_id
+        INNER JOIN materials m ON m.id = stock.material_id
         ${whereSql}
-        ORDER BY ${safeSortBy} ${safeSortOrder}
+        ORDER BY ${safeSortExpr} ${safeSortOrder}
         LIMIT ${safeLimit} OFFSET ${safeSkip}
       `,
       params,
@@ -141,9 +164,9 @@ export const inventoryRepository = {
     const countRows = await query(
       `
         SELECT COUNT(*) AS total
-        FROM inventory_balances
-        INNER JOIN warehouses w ON w.id = inventory_balances.warehouse_id
-        INNER JOIN materials m ON m.id = inventory_balances.material_id
+        FROM (${stockSql}) stock
+        INNER JOIN warehouses w ON w.id = stock.warehouse_id
+        INNER JOIN materials m ON m.id = stock.material_id
         ${whereSql}
       `,
       params,
@@ -324,36 +347,23 @@ export const inventoryRepository = {
     return rows[0] ?? null;
   },
 
-  async findBalanceForUpdate(connection, warehouseId, materialId) {
+  async getPostedStock(connection, warehouseId, materialId) {
     const [rows] = await connection.execute(
       `
-        SELECT quantity_on_hand
-        FROM inventory_balances
-        WHERE warehouse_id = ? AND material_id = ?
-        FOR UPDATE
+        SELECT COALESCE(SUM(
+          CASE
+            WHEN it.transaction_type IN ('RECEIPT', 'ADJUSTMENT_IN') THEN iti.quantity
+            WHEN it.transaction_type IN ('ISSUE', 'ADJUSTMENT_OUT') THEN -iti.quantity
+            ELSE 0
+          END
+        ), 0) AS quantity_on_hand
+        FROM inventory_transactions it
+        INNER JOIN inventory_transaction_items iti ON iti.inventory_transaction_id = it.id
+        WHERE it.status = 'POSTED' AND it.warehouse_id = ? AND iti.material_id = ?
       `,
       [warehouseId, materialId],
     );
-    return rows[0] ? { quantityOnHand: Number(rows[0].quantity_on_hand ?? 0) } : null;
-  },
-
-  async updateBalance(connection, warehouseId, materialId, delta) {
-    const [rows] = await connection.execute(
-      'SELECT id, quantity_on_hand FROM inventory_balances WHERE warehouse_id = ? AND material_id = ? FOR UPDATE',
-      [warehouseId, materialId],
-    );
-
-    if (rows.length > 0) {
-      await connection.execute(
-        'UPDATE inventory_balances SET quantity_on_hand = quantity_on_hand + ? WHERE id = ?',
-        [delta, rows[0].id],
-      );
-    } else {
-      await connection.execute(
-        'INSERT INTO inventory_balances (warehouse_id, material_id, quantity_on_hand) VALUES (?, ?, ?)',
-        [warehouseId, materialId, delta],
-      );
-    }
+    return Number(rows[0]?.quantity_on_hand ?? 0);
   },
 
   async createTransaction({ transactionHeader, items, userId }) {
@@ -405,19 +415,14 @@ export const inventoryRepository = {
             delta = -delta;
           }
 
-          // If subtract stock, lock balance and verify availability
           if (delta < 0) {
-            const balance = await this.findBalanceForUpdate(connection, transactionHeader.warehouseId, item.materialId);
-            const available = balance ? balance.quantityOnHand : 0;
+            const available = await this.getPostedStock(connection, transactionHeader.warehouseId, item.materialId);
             if (available < Math.abs(delta)) {
-              // Fetch material code for message
               const [mRows] = await connection.execute('SELECT material_code FROM materials WHERE id = ?', [item.materialId]);
               const materialCode = mRows[0] ? mRows[0].material_code : item.materialId;
               throw new Error(`INSUFFICIENT_STOCK_FOR:${materialCode}`);
             }
           }
-
-          await this.updateBalance(connection, transactionHeader.warehouseId, item.materialId, delta);
         }
       }
 
@@ -435,7 +440,7 @@ export const inventoryRepository = {
         FROM materials m
         LEFT JOIN (
           SELECT material_id, SUM(quantity_on_hand) AS total_stock
-          FROM inventory_balances
+          FROM (${stockSql}) stock_by_warehouse
           GROUP BY material_id
         ) AS ib ON ib.material_id = m.id
         WHERE COALESCE(ib.total_stock, 0) <= m.minimum_stock AND m.is_active = TRUE

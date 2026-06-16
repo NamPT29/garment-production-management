@@ -3,28 +3,6 @@ import { productionPlanRepository } from './production-plan.repository.js';
 import { productionOrderRepository } from '../production-orders/production-order.repository.js';
 import { productionLineRepository } from '../production-lines/production-line.repository.js';
 import { shiftRepository } from '../shifts/shift.repository.js';
-import { employeeRepository } from '../employees/employee.repository.js';
-import { operationRepository } from '../operations/operation.repository.js';
-
-const parseTimeToMinutes = (timeStr) => {
-  const [h, m] = timeStr.split(':').map(Number);
-  return h * 60 + m;
-};
-
-const getShiftInterval = (startStr, endStr) => {
-  const start = parseTimeToMinutes(startStr);
-  let end = parseTimeToMinutes(endStr);
-  if (end <= start) {
-    end += 1440; // overnight shift
-  }
-  return { start, end };
-};
-
-const checkShiftOverlap = (s1Start, s1End, s2Start, s2End) => {
-  const i1 = getShiftInterval(s1Start, s1End);
-  const i2 = getShiftInterval(s2Start, s2End);
-  return i1.start < i2.end && i2.start < i1.end;
-};
 
 export const productionPlanService = {
   // === Allocations ===
@@ -103,7 +81,21 @@ export const productionPlanService = {
   },
 
   async createSchedule(payload, userId) {
-    await this.getAllocationDetail(payload.productionAllocationId);
+    const po = await productionOrderRepository.findById(payload.productionOrderId);
+    if (!po) {
+      throw new AppError('Lệnh sản xuất không tồn tại', 400, 'PRODUCTION_ORDER_NOT_FOUND');
+    }
+
+    const sumAllocated = await productionPlanRepository.getSumOfOtherAllocations(payload.productionOrderId);
+    if (sumAllocated + payload.allocatedQuantity > po.plannedQuantity) {
+      const remaining = po.plannedQuantity - sumAllocated;
+      throw new AppError(
+        `Tổng số lượng phân bổ vượt quá số lượng kế hoạch của lệnh sản xuất (Còn lại có thể phân bổ: ${remaining})`,
+        400,
+        'ALLOCATION_QUANTITY_EXCEEDED'
+      );
+    }
+
     const line = await productionLineRepository.findById(payload.productionLineId);
     if (!line) {
       throw new AppError('Chuyền may không tồn tại', 400, 'PRODUCTION_LINE_NOT_FOUND');
@@ -133,7 +125,22 @@ export const productionPlanService = {
   },
 
   async updateSchedule(id, payload, userId) {
-    await this.getScheduleDetail(id);
+    const existing = await this.getScheduleDetail(id);
+    const po = await productionOrderRepository.findById(payload.productionOrderId);
+    if (!po) {
+      throw new AppError('Lệnh sản xuất không tồn tại', 400, 'PRODUCTION_ORDER_NOT_FOUND');
+    }
+
+    const sumAllocated = await productionPlanRepository.getSumOfOtherAllocations(payload.productionOrderId, existing.id);
+    if (sumAllocated + payload.allocatedQuantity > po.plannedQuantity) {
+      const remaining = po.plannedQuantity - sumAllocated;
+      throw new AppError(
+        `Tổng số lượng phân bổ vượt quá số lượng kế hoạch của lệnh sản xuất (Còn lại có thể phân bổ: ${remaining})`,
+        400,
+        'ALLOCATION_QUANTITY_EXCEEDED'
+      );
+    }
+
     const line = await productionLineRepository.findById(payload.productionLineId);
     if (!line) {
       throw new AppError('Chuyền may không tồn tại', 400, 'PRODUCTION_LINE_NOT_FOUND');
@@ -168,43 +175,9 @@ export const productionPlanService = {
     return productionPlanRepository.findScheduleAssignments(scheduleId);
   },
 
-  async assignEmployeeToSchedule(scheduleId, payload, userId) {
-    const schedule = await this.getScheduleDetail(scheduleId);
-    
-    const employee = await employeeRepository.findById(payload.employeeId);
-    if (!employee) {
-      throw new AppError('Nhân viên không tồn tại', 400, 'EMPLOYEE_NOT_FOUND');
-    }
-    if (employee.status !== 'ACTIVE') {
-      throw new AppError('Nhân viên không hoạt động', 400, 'EMPLOYEE_NOT_ACTIVE');
-    }
-
-    const operation = await operationRepository.findById(payload.operationId);
-    if (!operation) {
-      throw new AppError('Công đoạn không tồn tại', 400, 'OPERATION_NOT_FOUND');
-    }
-
-    // Guard worker overlapping schedules
-    const existingShifts = await productionPlanRepository.getEmployeeShiftsOnDate(payload.employeeId, schedule.scheduleDate);
-    for (const s of existingShifts) {
-      const overlap = checkShiftOverlap(schedule.startTime, schedule.endTime, s.startTime, s.endTime);
-      if (overlap) {
-        throw new AppError(
-          `Nhân viên đã được phân công vào ca làm việc khác trùng thời gian trên ngày ${schedule.scheduleDate} (Ca: ${s.shiftName})`,
-          400,
-          'EMPLOYEE_SCHEDULE_OVERLAP'
-        );
-      }
-    }
-
-    const id = await productionPlanRepository.assignEmployeeToSchedule(
-      {
-        ...payload,
-        productionScheduleId: scheduleId,
-      },
-      userId
-    );
-    return { assignmentId: id };
+  async assignEmployeeToSchedule(scheduleId) {
+    await this.getScheduleDetail(scheduleId);
+    throw new AppError('Chức năng phân công nhân viên theo lịch đã được giản lược trong schema tối ưu', 410, 'SCHEDULE_ASSIGNMENT_REMOVED');
   },
 
   async removeEmployeeFromSchedule(scheduleId, assignmentId) {

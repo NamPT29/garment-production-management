@@ -185,8 +185,6 @@ export const orderRepository = {
       `,
       [id],
     );
-    const historyRows = await this.findStatusHistory(id);
-
     return {
       ...mapOrderBase(row),
       customer: {
@@ -213,34 +211,12 @@ export const orderRepository = {
           unit: item.unit,
         },
       })),
-      statusHistory: historyRows,
+      statusHistory: [],
     };
   },
 
-  async findStatusHistory(orderId) {
-    const rows = await query(
-      `
-        SELECT
-          order_status_histories.*,
-          users.username AS changed_by_username
-        FROM order_status_histories
-        LEFT JOIN users ON users.id = order_status_histories.changed_by
-        WHERE order_status_histories.order_id = ?
-        ORDER BY order_status_histories.created_at ASC, order_status_histories.id ASC
-      `,
-      [orderId],
-    );
-
-    return rows.map((row) => ({
-      id: row.id,
-      orderId: row.order_id,
-      fromStatus: row.from_status,
-      toStatus: row.to_status,
-      changedBy: row.changed_by,
-      changedByUsername: row.changed_by_username,
-      changeNote: row.change_note,
-      createdAt: row.created_at,
-    }));
+  async findStatusHistory() {
+    return [];
   },
 
   async create({ order, items, userId }) {
@@ -282,13 +258,7 @@ export const orderRepository = {
         );
       }
 
-      await connection.execute(
-        `
-          INSERT INTO order_status_histories (order_id, from_status, to_status, changed_by, change_note)
-          VALUES (?, NULL, 'DRAFT', ?, ?)
-        `,
-        [orderId, userId, 'Tao don hang'],
-      );
+
 
       return orderId;
     });
@@ -344,20 +314,14 @@ export const orderRepository = {
     });
   },
 
-  async updateStatus({ orderId, fromStatus, toStatus, changeNote, userId }) {
+  async updateStatus({ orderId, toStatus, userId }) {
     return transaction(async (connection) => {
       await connection.execute('UPDATE orders SET status = ?, updated_by = ? WHERE id = ?', [
         toStatus,
         userId,
         orderId,
       ]);
-      await connection.execute(
-        `
-          INSERT INTO order_status_histories (order_id, from_status, to_status, changed_by, change_note)
-          VALUES (?, ?, ?, ?, ?)
-        `,
-        [orderId, fromStatus, toStatus, userId, changeNote ?? null],
-      );
+
     });
   },
 

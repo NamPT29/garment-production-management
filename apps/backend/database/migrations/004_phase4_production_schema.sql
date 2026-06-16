@@ -69,31 +69,6 @@ CREATE TABLE IF NOT EXISTS shifts (
     ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS line_employee_assignments (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  production_line_id BIGINT UNSIGNED NOT NULL,
-  employee_id BIGINT UNSIGNED NOT NULL,
-  assigned_from DATE NOT NULL,
-  assigned_to DATE NULL,
-  is_primary BOOLEAN NOT NULL DEFAULT TRUE,
-  notes TEXT NULL,
-  created_by BIGINT UNSIGNED NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_line_emp_line (production_line_id),
-  KEY idx_line_emp_employee (employee_id),
-  CONSTRAINT fk_line_emp_line
-    FOREIGN KEY (production_line_id) REFERENCES production_lines(id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_line_emp_employee
-    FOREIGN KEY (employee_id) REFERENCES employees(id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_line_emp_created_by
-    FOREIGN KEY (created_by) REFERENCES users(id)
-    ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS operations (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   operation_code VARCHAR(50) NOT NULL,
@@ -180,42 +155,17 @@ CREATE TABLE IF NOT EXISTS production_orders (
   CONSTRAINT chk_prod_orders_completed_qty CHECK (completed_quantity <= planned_quantity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS production_allocations (
+CREATE TABLE IF NOT EXISTS production_schedules (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   production_order_id BIGINT UNSIGNED NOT NULL,
   production_line_id BIGINT UNSIGNED NOT NULL,
-  allocated_quantity INT UNSIGNED NOT NULL,
-  planned_start_date DATE NOT NULL,
-  planned_end_date DATE NOT NULL,
-  status ENUM('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PLANNED',
-  notes TEXT NULL,
-  created_by BIGINT UNSIGNED NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_prod_alloc_order (production_order_id),
-  KEY idx_prod_alloc_line (production_line_id),
-  CONSTRAINT fk_prod_alloc_order
-    FOREIGN KEY (production_order_id) REFERENCES production_orders(id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_prod_alloc_line
-    FOREIGN KEY (production_line_id) REFERENCES production_lines(id)
-    ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT fk_prod_alloc_created_by
-    FOREIGN KEY (created_by) REFERENCES users(id)
-    ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT chk_prod_alloc_qty CHECK (allocated_quantity > 0),
-  CONSTRAINT chk_prod_alloc_dates CHECK (planned_end_date >= planned_start_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS production_schedules (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  production_allocation_id BIGINT UNSIGNED NOT NULL,
-  production_line_id BIGINT UNSIGNED NOT NULL,
   shift_id BIGINT UNSIGNED NOT NULL,
   schedule_date DATE NOT NULL,
+  allocated_quantity INT UNSIGNED NOT NULL,
   target_quantity INT UNSIGNED NOT NULL,
   planned_workers INT UNSIGNED NOT NULL,
+  planned_start_date DATE NOT NULL,
+  planned_end_date DATE NOT NULL,
   status ENUM('DRAFT', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'DRAFT',
   notes TEXT NULL,
   created_by BIGINT UNSIGNED NULL,
@@ -223,11 +173,11 @@ CREATE TABLE IF NOT EXISTS production_schedules (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  KEY idx_prod_sched_alloc (production_allocation_id),
+  KEY idx_prod_sched_order (production_order_id),
   KEY idx_prod_sched_date (schedule_date),
   KEY idx_prod_sched_line_shift (production_line_id, shift_id),
-  CONSTRAINT fk_prod_sched_alloc
-    FOREIGN KEY (production_allocation_id) REFERENCES production_allocations(id)
+  CONSTRAINT fk_prod_sched_order
+    FOREIGN KEY (production_order_id) REFERENCES production_orders(id)
     ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_prod_sched_line
     FOREIGN KEY (production_line_id) REFERENCES production_lines(id)
@@ -241,35 +191,10 @@ CREATE TABLE IF NOT EXISTS production_schedules (
   CONSTRAINT fk_prod_sched_updated_by
     FOREIGN KEY (updated_by) REFERENCES users(id)
     ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT chk_prod_sched_alloc_qty CHECK (allocated_quantity > 0),
   CONSTRAINT chk_prod_sched_target_qty CHECK (target_quantity > 0),
-  CONSTRAINT chk_prod_sched_workers CHECK (planned_workers > 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS schedule_employee_assignments (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  production_schedule_id BIGINT UNSIGNED NOT NULL,
-  employee_id BIGINT UNSIGNED NOT NULL,
-  operation_id BIGINT UNSIGNED NOT NULL,
-  assigned_quantity INT UNSIGNED NULL,
-  notes TEXT NULL,
-  created_by BIGINT UNSIGNED NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_sched_emp_sched (production_schedule_id),
-  KEY idx_sched_emp_employee (employee_id),
-  CONSTRAINT fk_sched_emp_sched
-    FOREIGN KEY (production_schedule_id) REFERENCES production_schedules(id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_sched_emp_employee
-    FOREIGN KEY (employee_id) REFERENCES employees(id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_sched_emp_operation
-    FOREIGN KEY (operation_id) REFERENCES operations(id)
-    ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT fk_sched_emp_created_by
-    FOREIGN KEY (created_by) REFERENCES users(id)
-    ON DELETE SET NULL ON UPDATE CASCADE
+  CONSTRAINT chk_prod_sched_workers CHECK (planned_workers > 0),
+  CONSTRAINT chk_prod_sched_dates CHECK (planned_end_date >= planned_start_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS production_outputs (
@@ -309,45 +234,3 @@ CREATE TABLE IF NOT EXISTS production_outputs (
     ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS employee_outputs (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  production_output_id BIGINT UNSIGNED NOT NULL,
-  employee_id BIGINT UNSIGNED NOT NULL,
-  operation_id BIGINT UNSIGNED NOT NULL,
-  good_quantity INT UNSIGNED NOT NULL DEFAULT 0,
-  defect_quantity INT UNSIGNED NOT NULL DEFAULT 0,
-  working_minutes INT UNSIGNED NOT NULL DEFAULT 0,
-  notes TEXT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_emp_out_employee (employee_id),
-  CONSTRAINT fk_emp_out_output
-    FOREIGN KEY (production_output_id) REFERENCES production_outputs(id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_emp_out_employee
-    FOREIGN KEY (employee_id) REFERENCES employees(id)
-    ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT fk_emp_out_operation
-    FOREIGN KEY (operation_id) REFERENCES operations(id)
-    ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS production_progress_snapshots (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  production_order_id BIGINT UNSIGNED NOT NULL,
-  snapshot_date DATE NOT NULL,
-  planned_quantity INT NOT NULL,
-  completed_quantity INT NOT NULL,
-  remaining_quantity INT NOT NULL,
-  progress_percent DECIMAL(5,2) NOT NULL,
-  expected_progress_percent DECIMAL(5,2) NOT NULL,
-  delay_quantity INT NOT NULL,
-  status ENUM('ON_TRACK', 'AT_RISK', 'DELAYED', 'COMPLETED') NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_progress_snapshot_order (production_order_id),
-  CONSTRAINT fk_progress_snapshot_order
-    FOREIGN KEY (production_order_id) REFERENCES production_orders(id)
-    ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

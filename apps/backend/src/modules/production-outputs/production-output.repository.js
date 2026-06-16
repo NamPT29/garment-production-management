@@ -99,31 +99,7 @@ export const productionOutputRepository = {
     const output = mapOutput(rows[0]);
     if (!output) return null;
 
-    // Fetch employee outputs
-    const empRows = await query(
-      `
-        SELECT eo.*, e.employee_code, e.full_name, o.operation_code, o.operation_name
-        FROM employee_outputs eo
-        INNER JOIN employees e ON e.id = eo.employee_id
-        INNER JOIN operations o ON o.id = eo.operation_id
-        WHERE eo.production_output_id = ?
-      `,
-      [id]
-    );
-
-    output.employeeOutputs = empRows.map((row) => ({
-      id: row.id,
-      employeeId: row.employee_id,
-      employeeCode: row.employee_code,
-      fullName: row.full_name,
-      operationId: row.operation_id,
-      operationCode: row.operation_code,
-      operationName: row.operation_name,
-      goodQuantity: Number(row.good_quantity ?? 0),
-      defectQuantity: Number(row.defect_quantity ?? 0),
-      workingMinutes: Number(row.working_minutes ?? 0),
-      notes: row.notes,
-    }));
+    output.employeeOutputs = [];
 
     return output;
   },
@@ -182,28 +158,7 @@ export const productionOutputRepository = {
       );
       const outputId = outResult.insertId;
 
-      // 4. Insert Employee Outputs
-      for (const item of employeeOutputs) {
-        await connection.execute(
-          `
-            INSERT INTO employee_outputs (
-              production_output_id, employee_id, operation_id, good_quantity, defect_quantity, working_minutes, notes
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-          `,
-          [
-            outputId,
-            item.employeeId,
-            item.operationId,
-            item.goodQuantity,
-            item.defectQuantity,
-            item.workingMinutes ?? 0,
-            item.notes ?? null,
-          ]
-        );
-      }
-
-      // 5. Update Production Order quantities and status
+      // 4. Update Production Order quantities and status
       await connection.execute(
         `
           UPDATE production_orders
@@ -224,7 +179,7 @@ export const productionOutputRepository = {
         ]
       );
 
-      // 6. Update Schedule status to CONFIRMED or COMPLETED/IN_PROGRESS if necessary
+      // 5. Update Schedule status
       await connection.execute(
         `
           UPDATE production_schedules
@@ -234,27 +189,7 @@ export const productionOutputRepository = {
         [outputData.productionScheduleId]
       );
 
-      // 7. Insert Production Progress Snapshot
-      await connection.execute(
-        `
-          INSERT INTO production_progress_snapshots (
-            production_order_id, snapshot_date, planned_quantity, completed_quantity, remaining_quantity, 
-            progress_percent, expected_progress_percent, delay_quantity, status
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-        [
-          outputData.productionOrderId,
-          toDateString(snapshotData.snapshotDate),
-          snapshotData.plannedQuantity,
-          newCompleted, // completed_quantity
-          snapshotData.plannedQuantity - newCompleted, // remaining_quantity
-          snapshotData.progressPercent,
-          snapshotData.expectedProgressPercent,
-          snapshotData.delayQuantity,
-          snapshotData.status,
-        ]
-      );
+
 
       return outputId;
     });

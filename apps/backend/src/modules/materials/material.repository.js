@@ -2,6 +2,24 @@ import { query } from '../../config/database.js';
 
 const allowedSortFields = new Set(['material_code', 'material_name', 'minimum_stock', 'created_at', 'updated_at']);
 
+const stockSql = `
+  SELECT
+    it.warehouse_id,
+    iti.material_id,
+    SUM(
+      CASE
+        WHEN it.transaction_type IN ('RECEIPT', 'ADJUSTMENT_IN') THEN iti.quantity
+        WHEN it.transaction_type IN ('ISSUE', 'ADJUSTMENT_OUT') THEN -iti.quantity
+        ELSE 0
+      END
+    ) AS quantity_on_hand,
+    MAX(it.updated_at) AS updated_at
+  FROM inventory_transactions it
+  INNER JOIN inventory_transaction_items iti ON iti.inventory_transaction_id = it.id
+  WHERE it.status = 'POSTED'
+  GROUP BY it.warehouse_id, iti.material_id
+`;
+
 const mapMaterial = (row) => {
   if (!row) {
     return null;
@@ -102,7 +120,7 @@ export const materialRepository = {
         LEFT JOIN suppliers ON suppliers.id = materials.default_supplier_id
         LEFT JOIN (
           SELECT material_id, SUM(quantity_on_hand) AS total_stock
-          FROM inventory_balances
+          FROM (${stockSql}) stock_by_warehouse
           GROUP BY material_id
         ) AS ib ON ib.material_id = materials.id
         ${whereSql}
@@ -118,7 +136,7 @@ export const materialRepository = {
         FROM materials
         LEFT JOIN (
           SELECT material_id, SUM(quantity_on_hand) AS total_stock
-          FROM inventory_balances
+          FROM (${stockSql}) stock_by_warehouse
           GROUP BY material_id
         ) AS ib ON ib.material_id = materials.id
         ${whereSql}
@@ -146,7 +164,7 @@ export const materialRepository = {
         LEFT JOIN suppliers ON suppliers.id = materials.default_supplier_id
         LEFT JOIN (
           SELECT material_id, SUM(quantity_on_hand) AS total_stock
-          FROM inventory_balances
+          FROM (${stockSql}) stock_by_warehouse
           WHERE material_id = ?
           GROUP BY material_id
         ) AS ib ON ib.material_id = materials.id
@@ -169,7 +187,7 @@ export const materialRepository = {
           w.warehouse_code AS warehouseCode,
           w.warehouse_name AS warehouseName,
           ib.quantity_on_hand AS quantityOnHand
-        FROM inventory_balances ib
+        FROM (${stockSql}) ib
         INNER JOIN warehouses w ON w.id = ib.warehouse_id
         WHERE ib.material_id = ?
       `,
@@ -210,7 +228,7 @@ export const materialRepository = {
         LEFT JOIN suppliers ON suppliers.id = materials.default_supplier_id
         LEFT JOIN (
           SELECT material_id, SUM(quantity_on_hand) AS total_stock
-          FROM inventory_balances
+          FROM (${stockSql}) stock_by_warehouse
           GROUP BY material_id
         ) AS ib ON ib.material_id = materials.id
         WHERE materials.id IN (${placeholders}) AND materials.is_active = TRUE
