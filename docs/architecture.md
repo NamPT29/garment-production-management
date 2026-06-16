@@ -1,8 +1,17 @@
-# Kien truc Phase 1
+# Kien truc Phase 2
 
 ## Frontend
 
-ReactJS + Vite dung JSX. Giao dien dau tien gom dashboard va login placeholder.
+ReactJS + Vite dung JS/JSX, Material UI, React Router DOM, Axios va Recharts.
+
+Man hinh hien co:
+
+- Dang nhap.
+- Dashboard tong quan lay du lieu tu API `/orders/summary`.
+- Quan ly khach hang.
+- Quan ly san pham.
+- Danh sach, tao, sua, xem chi tiet va cap nhat trang thai don hang.
+- Trang 404.
 
 ## Backend
 
@@ -21,7 +30,20 @@ AI Integration: Axios goi Python/FastAPI
 Kien truc backend:
 
 ```text
-Route -> Middleware -> Controller -> Service -> mysql2/promise -> MySQL
+Route -> Middleware -> Controller -> Service -> Repository -> mysql2/promise -> MySQL
 ```
 
-Phase 1 moi co module `health`. Cac module nghiep vu se them tu Phase 2.
+Module hien co:
+
+- `auth`
+- `health`
+- `ai`
+- `customers`
+- `products`
+- `orders`
+
+Order service su dung transaction khi tao/sua don hang va khi cap nhat trang thai. Lich su trang thai duoc luu trong `order_status_histories`.
+
+## AI Service
+
+Python + FastAPI giu vai tro service rieng. Phase 2 chua trien khai AI nghiep vu hoan chinh; backend moi proxy health check toi `AI_SERVICE_URL`.

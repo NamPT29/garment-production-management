@@ -1,4 +1,4 @@
-import { Factory, Home, Menu, Notifications, Person, Settings } from '@mui/icons-material';
+import { Assignment, Group, Home, Inventory2, Menu, Notifications, Person } from '@mui/icons-material';
 import {
   AppBar,
   Box,
@@ -12,17 +12,20 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
-import { Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 
 const drawerWidth = 280;
 
 const navigationItems = [
-  { label: 'Tong quan', icon: <Home /> },
-  { label: 'San xuat', icon: <Factory /> },
-  { label: 'Cau hinh', icon: <Settings /> },
+  { label: 'Tong quan', icon: <Home />, path: '/' },
+  { label: 'Khach hang', icon: <Group />, path: '/customers' },
+  { label: 'San pham', icon: <Inventory2 />, path: '/products' },
+  { label: 'Don hang', icon: <Assignment />, path: '/orders' },
 ];
 
 export function AppShell() {
+  const location = useLocation();
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar
@@ -61,20 +64,24 @@ export function AppShell() {
         <Toolbar />
         <Box sx={{ p: 2 }}>
           <Typography variant="overline" color="text.secondary">
-            Phase 1
+            Phase 2
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Nen tang ung dung ReactJS
+            Khach hang, san pham va don hang
           </Typography>
         </Box>
         <Divider />
         <List>
-          {navigationItems.map((item) => (
-            <ListItemButton key={item.label} selected={item.label === 'Tong quan'}>
+          {navigationItems.map((item) => {
+            const selected = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
+
+            return (
+            <ListItemButton key={item.label} component={Link} to={item.path} selected={selected}>
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.label} />
             </ListItemButton>
-          ))}
+            );
+          })}
         </List>
       </Drawer>
 

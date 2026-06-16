@@ -1,8 +1,8 @@
 # He thong quan ly va dieu hanh san xuat xuong may tich hop AI
 
-Monorepo cho do an quan ly san xuat xuong may. Phase 1 hien tai tap trung khoi tao nen tang chay duoc:
+Monorepo cho do an quan ly san xuat xuong may. Phase 2 hien tai tap trung vao auth/RBAC va cac module nghiep vu dau tien:
 
-- Frontend: ReactJS, Vite, Material UI, React Router, TanStack Query, Recharts.
+- Frontend: ReactJS, Vite, Material UI, React Router, Axios, Recharts.
 - Backend: JavaScript ES Module, Node.js, Express.js, mysql2/promise, MySQL, Swagger, Socket.IO.
 - AI Service: Python, FastAPI, Pydantic, Pandas, NumPy, Scikit-learn, OR-Tools.
 - DevOps: Docker Compose, Nginx, `.env.example`.
@@ -72,9 +72,10 @@ Import file:
 
 ```text
 docs/postman/garment-production-phase-1.postman_collection.json
+docs/postman/garment-production-phase-2.postman_collection.json
 ```
 
-Collection hien co cac request health backend, Swagger, AI health va 5 endpoint AI baseline.
+Collection Phase 2 co login, customers, products, orders, cap nhat trang thai va status history.
 
 ## Tai khoan development mau
 
@@ -88,6 +89,6 @@ Password: xem DEV_ADMIN_PASSWORD trong .env development
 
 Mat khau duoc bam bang bcrypt truoc khi luu vao MySQL.
 
-## Trang thai Phase 1
+## Trang thai Phase 2
 
-Da scaffold nen tang. Chua co dang nhap/RBAC that, chua co migration nghiep vu va chua co seed tai khoan demo. Cac muc nay thuoc Phase 2 tro di.
+Da co dang nhap JWT, RBAC, migration MySQL, seed admin development, customers, products va orders. Cac module kho, BOM, QC, thiet bi, ke hoach san xuat va AI nghiep vu hoan chinh de danh cho phase sau.

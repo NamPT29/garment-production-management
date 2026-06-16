@@ -1,22 +1,54 @@
-import { Box, Grid, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Box, Grid, LinearProgress, Paper, Stack, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { orderService } from '../services/orderService.js';
 
-const summaryCards = [
-  { label: 'Don hang', value: '0', helper: 'Cho seed du lieu Phase 2' },
-  { label: 'Ke hoach', value: '0', helper: 'Se ket noi API backend' },
-  { label: 'Canh bao', value: '0', helper: 'Socket.IO o cac phase sau' },
-  { label: 'AI baseline', value: '5', helper: 'Endpoint FastAPI da scaffold' },
-];
-
-const chartData = [
-  { name: 'T2', output: 0 },
-  { name: 'T3', output: 0 },
-  { name: 'T4', output: 0 },
-  { name: 'T5', output: 0 },
-  { name: 'T6', output: 0 },
-];
+const statusLabels = {
+  DRAFT: 'Nhap',
+  CONFIRMED: 'Da xac nhan',
+  PLANNED: 'Da lap KH',
+  IN_PRODUCTION: 'Dang SX',
+  QUALITY_CHECK: 'Kiem hang',
+  COMPLETED: 'Hoan tat',
+  DELIVERED: 'Da giao',
+  CANCELLED: 'Da huy',
+};
 
 export function DashboardPage() {
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadSummary = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const data = await orderService.summary();
+        setSummary(data);
+      } catch (requestError) {
+        setError(requestError.response?.data?.message ?? 'Khong tai duoc du lieu dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSummary();
+  }, []);
+
+  const cards = [
+    { label: 'Tong don hang', value: summary?.totalOrders ?? 0, helper: 'Tat ca don hang dang quan ly' },
+    { label: 'Dang san xuat', value: summary?.inProduction ?? 0, helper: 'Trang thai IN_PRODUCTION' },
+    { label: 'Sap den han', value: summary?.dueSoon ?? 0, helper: 'Ngay giao trong 7 ngay toi' },
+    { label: 'Da giao', value: summary?.delivered ?? 0, helper: 'Don hang da ban giao' },
+  ];
+
+  const chartData = (summary?.byStatus ?? []).map((item) => ({
+    name: statusLabels[item.status] ?? item.status,
+    value: item.total,
+  }));
+
   return (
     <Stack spacing={3}>
       <Box>
@@ -24,12 +56,15 @@ export function DashboardPage() {
           Dashboard tong quan
         </Typography>
         <Typography color="text.secondary">
-          Khung giao dien ReactJS dau tien cho he thong quan ly san xuat xuong may.
+          Theo doi nhanh tinh hinh don hang san xuat trong xuong may.
         </Typography>
       </Box>
 
+      {loading ? <LinearProgress /> : null}
+      {error ? <Alert severity="error">{error}</Alert> : null}
+
       <Grid container spacing={2}>
-        {summaryCards.map((card) => (
+        {cards.map((card) => (
           <Grid item xs={12} sm={6} lg={3} key={card.label}>
             <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
               <Typography variant="body2" color="text.secondary">
@@ -46,19 +81,25 @@ export function DashboardPage() {
         ))}
       </Grid>
 
-      <Paper variant="outlined" sx={{ p: 2, height: 340 }}>
+      <Paper variant="outlined" sx={{ p: 2, height: 360 }}>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-          San luong theo ngay
+          Don hang theo trang thai
         </Typography>
-        <ResponsiveContainer width="100%" height="85%">
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="output" fill="#176b5b" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="85%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#176b5b" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <Box sx={{ height: '85%', display: 'grid', placeItems: 'center', color: 'text.secondary' }}>
+            Chua co du lieu don hang
+          </Box>
+        )}
       </Paper>
     </Stack>
   );

@@ -1,0 +1,248 @@
+{
+  "info": {
+    "name": "Garment Production Management - Phase 2",
+    "_postman_id": "7b7cb9b3-90b7-4586-9e21-phase2",
+    "description": "Collection test API Phase 2: auth, customers, products, orders va status history.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "backendBaseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "customerId",
+      "value": "1"
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    },
+    {
+      "key": "orderId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.accessToken) {",
+              "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identifier\": \"admin\",\n  \"password\": \"Admin@123456\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/auth/login",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Customers - List",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/customers?page=1&limit=10",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "customers"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Customers - Create",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "  pm.collectionVariables.set('customerId', String(json.data.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerCode\": \"CUS-PM-001\",\n  \"customerName\": \"Postman Customer\",\n  \"contactPerson\": \"Nguyen Van A\",\n  \"phone\": \"0900000000\",\n  \"email\": \"postman.customer@example.com\",\n  \"address\": \"TP HCM\",\n  \"taxCode\": \"0312345678\",\n  \"note\": \"Tao tu Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/customers",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "customers"]
+        }
+      }
+    },
+    {
+      "name": "Products - List",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/products?page=1&limit=10",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Products - Create",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "  pm.collectionVariables.set('productId', String(json.data.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"PRO-PM-001\",\n  \"productName\": \"Ao thun Postman\",\n  \"category\": \"Ao thun\",\n  \"unit\": \"cai\",\n  \"standardSewingMinutes\": 18,\n  \"description\": \"San pham tao tu Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/products",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "products"]
+        }
+      }
+    },
+    {
+      "name": "Orders - Summary",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/orders/summary",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "orders", "summary"]
+        }
+      }
+    },
+    {
+      "name": "Orders - Create",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "  pm.collectionVariables.set('orderId', String(json.data.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderCode\": \"ORD-PM-001\",\n  \"customerId\": {{customerId}},\n  \"orderDate\": \"2026-06-16\",\n  \"expectedDeliveryDate\": \"2026-06-30\",\n  \"priority\": \"NORMAL\",\n  \"note\": \"Don hang tao tu Postman\",\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 100,\n      \"unitPrice\": 65000,\n      \"note\": \"Hang mau\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/orders",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "orders"]
+        }
+      }
+    },
+    {
+      "name": "Orders - Detail",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/orders/{{orderId}}",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "orders", "{{orderId}}"]
+        }
+      }
+    },
+    {
+      "name": "Orders - Update Status",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"CONFIRMED\",\n  \"changeNote\": \"Da xac nhan tu Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/orders/{{orderId}}/status",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "orders", "{{orderId}}", "status"]
+        }
+      }
+    },
+    {
+      "name": "Orders - Status History",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/orders/{{orderId}}/status-history",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "orders", "{{orderId}}", "status-history"]
+        }
+      }
+    }
+  ]
+}
