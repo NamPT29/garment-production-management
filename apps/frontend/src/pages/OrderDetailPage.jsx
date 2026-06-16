@@ -83,6 +83,11 @@ export function OrderDetailPage() {
         {hasPermission('ORDER_UPDATE') && !['DELIVERED', 'CANCELLED'].includes(order.status) ? (
           <Button component={Link} to={`/orders/${id}/edit`} startIcon={<Edit />} variant="outlined">Sua</Button>
         ) : null}
+        {hasPermission('MATERIAL_REQUIREMENT_VIEW') ? (
+          <Button component={Link} to={`/orders/${id}/material-requirements`} variant="outlined" color="primary">
+            Tính nhu cầu nguyên phụ liệu
+          </Button>
+        ) : null}
         {hasPermission('ORDER_STATUS_UPDATE') ? (
           <Button variant="contained" onClick={() => setStatusOpen(true)}>Doi trang thai</Button>
         ) : null}

@@ -1,0 +1,420 @@
+{
+  "info": {
+    "name": "Garment Production Management - Phase 3",
+    "_postman_id": "7b7cb9b3-90b7-4586-9e21-phase3",
+    "description": "Collection test API Phase 3: Suppliers, Materials, Warehouses, BOMs, Inventory (Receipts, Issues, Adjustments, Balances, Transactions) and Material Requirements.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "backendBaseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "supplierId",
+      "value": ""
+    },
+    {
+      "key": "materialId",
+      "value": ""
+    },
+    {
+      "key": "warehouseId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "bomId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.accessToken) {",
+              "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identifier\": \"admin\",\n  \"password\": \"Admin@123456\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/auth/login",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Suppliers - Create",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "  pm.collectionVariables.set('supplierId', String(json.data.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"supplierCode\": \"SUP-PM-001\",\n  \"supplierName\": \"Nha cung cap Postman\",\n  \"contactPerson\": \"Nguyen A\",\n  \"phone\": \"0909000111\",\n  \"email\": \"sup.postman@example.com\",\n  \"address\": \"Hanoi, Vietnam\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/suppliers",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "suppliers"]
+        }
+      }
+    },
+    {
+      "name": "Suppliers - List",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/suppliers?page=1&limit=10",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "suppliers"]
+        }
+      }
+    },
+    {
+      "name": "Materials - Create",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "  pm.collectionVariables.set('materialId', String(json.data.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"materialCode\": \"MAT-PM-001\",\n  \"materialName\": \"Vai Thun Postman\",\n  \"category\": \"FABRIC\",\n  \"unit\": \"met\",\n  \"minimumStock\": 50,\n  \"defaultSupplierId\": {{supplierId}},\n  \"color\": \"Green\",\n  \"specification\": \"Cotton 100%\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/materials",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "materials"]
+        }
+      }
+    },
+    {
+      "name": "Materials - List",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/materials?page=1&limit=10",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "materials"]
+        }
+      }
+    },
+    {
+      "name": "Warehouses - Create",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "  pm.collectionVariables.set('warehouseId', String(json.data.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"warehouseCode\": \"WH-PM-001\",\n  \"warehouseName\": \"Kho Postman 1\",\n  \"location\": \"Khu B\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/warehouses",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "warehouses"]
+        }
+      }
+    },
+    {
+      "name": "Warehouses - List",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/warehouses",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "warehouses"]
+        }
+      }
+    },
+    {
+      "name": "Products - Create",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "  pm.collectionVariables.set('productId', String(json.data.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"PRO-PM-003\",\n  \"productName\": \"Ao Polo Postman\",\n  \"category\": \"Ao polo\",\n  \"unit\": \"cai\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/products",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "products"]
+        }
+      }
+    },
+    {
+      "name": "BOMs - Create Draft",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "  pm.collectionVariables.set('bomId', String(json.data.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productId\": {{productId}},\n  \"version\": \"V1.0-PM\",\n  \"effectiveDate\": \"2026-06-16\",\n  \"items\": [\n    {\n      \"materialId\": {{materialId}},\n      \"quantityPerUnit\": 1.4,\n      \"wasteRatePercent\": 2.5,\n      \"notes\": \"Vai may ao\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/boms",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "boms"]
+        }
+      }
+    },
+    {
+      "name": "BOMs - Activate",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/boms/{{bomId}}/activate",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "boms", "{{bomId}}", "activate"]
+        }
+      }
+    },
+    {
+      "name": "Inventory - Create Receipt",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionCode\": \"REC-PM-001\",\n  \"warehouseId\": {{warehouseId}},\n  \"supplierId\": {{supplierId}},\n  \"transactionDate\": \"2026-06-16\",\n  \"referenceNumber\": \"REF-PM-100\",\n  \"items\": [\n    {\n      \"materialId\": {{materialId}},\n      \"quantity\": 200,\n      \"unitCost\": 12000,\n      \"notes\": \"Nhap thun\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/inventory/receipts",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "inventory", "receipts"]
+        }
+      }
+    },
+    {
+      "name": "Orders - Create",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.id) {",
+              "  pm.collectionVariables.set('orderId', String(json.data.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderCode\": \"ORD-PM-002\",\n  \"customerId\": 1,\n  \"orderDate\": \"2026-06-16\",\n  \"expectedDeliveryDate\": \"2026-06-30\",\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 100,\n      \"unitPrice\": 85000\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/orders",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "orders"]
+        }
+      }
+    },
+    {
+      "name": "Orders - Material Requirements",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/orders/{{orderId}}/material-requirements",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "orders", "{{orderId}}", "material-requirements"]
+        }
+      }
+    },
+    {
+      "name": "Inventory - Create Issue",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionCode\": \"ISS-PM-001\",\n  \"warehouseId\": {{warehouseId}},\n  \"orderId\": {{orderId}},\n  \"transactionDate\": \"2026-06-16\",\n  \"items\": [\n    {\n      \"materialId\": {{materialId}},\n      \"quantity\": 143.5\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/inventory/issues",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "inventory", "issues"]
+        }
+      }
+    },
+    {
+      "name": "Inventory - Create Adjustment IN",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionCode\": \"ADJ-PM-IN-01\",\n  \"transactionType\": \"ADJUSTMENT_IN\",\n  \"warehouseId\": {{warehouseId}},\n  \"transactionDate\": \"2026-06-16\",\n  \"notes\": \"Kiem ke thay du thua\",\n  \"items\": [\n    {\n      \"materialId\": {{materialId}},\n      \"quantity\": 10\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/inventory/adjustments",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "inventory", "adjustments"]
+        }
+      }
+    },
+    {
+      "name": "Inventory - Balances",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/inventory/balances?warehouseId={{warehouseId}}",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "inventory", "balances"],
+          "query": [
+            { "key": "warehouseId", "value": "{{warehouseId}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Inventory - Transactions",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/inventory/transactions?page=1&limit=10",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "inventory", "transactions"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      }
+    }
+  ]
+}

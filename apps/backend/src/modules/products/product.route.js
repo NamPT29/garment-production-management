@@ -16,9 +16,15 @@ import {
   updateProductSchema,
 } from './product.validation.js';
 
+import { getProductBoms, getProductActiveBom } from '../boms/bom.controller.js';
+import { productIdSchema as productBomIdSchema } from '../boms/bom.validation.js';
+
 const router = Router();
 
 router.use(authenticate);
+
+router.get('/:productId/boms', authorizePermissions('BOM_VIEW'), validate(productBomIdSchema), getProductBoms);
+router.get('/:productId/active-bom', authorizePermissions('BOM_VIEW'), validate(productBomIdSchema), getProductActiveBom);
 
 router.get('/', authorizePermissions('PRODUCT_VIEW'), validate(listProductsSchema), listProducts);
 router.post('/', authorizePermissions('PRODUCT_CREATE'), validate(createProductSchema), createProduct);
