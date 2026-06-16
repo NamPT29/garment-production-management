@@ -1,0 +1,21 @@
+{
+  "name": "garment-production-management",
+  "version": "0.1.0",
+  "private": true,
+  "description": "He thong quan ly va dieu hanh san xuat xuong may tich hop AI",
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm --workspace apps/frontend run dev",
+    "dev:backend": "npm --workspace apps/backend run dev",
+    "build": "npm --workspace apps/frontend run build && npm --workspace apps/backend run build",
+    "lint": "npm --workspace apps/frontend run lint && npm --workspace apps/backend run lint",
+    "test": "npm --workspace apps/backend run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml,css,html,py}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
+}

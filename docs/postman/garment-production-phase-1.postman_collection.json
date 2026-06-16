@@ -1,0 +1,180 @@
+{
+  "info": {
+    "name": "Garment Production Management - Phase 1",
+    "_postman_id": "5d0c3ad3-0f65-4d68-80f5-phase1",
+    "description": "Collection test API Phase 1: backend health, Swagger va AI baseline.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "backendBaseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "aiBaseUrl",
+      "value": "http://localhost:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Backend Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/health",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "health"]
+        }
+      }
+    },
+    {
+      "name": "Swagger JSON",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/docs",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "docs"]
+        }
+      }
+    },
+    {
+      "name": "Auth Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identifier\": \"admin\",\n  \"password\": \"Admin@123456\"\n}"
+        },
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/auth/login",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Auth Me",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/auth/me",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "auth", "me"]
+        }
+      }
+    },
+    {
+      "name": "Backend AI Health Proxy",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{backendBaseUrl}}/api/v1/ai/health",
+          "host": ["{{backendBaseUrl}}"],
+          "path": ["api", "v1", "ai", "health"]
+        }
+      }
+    },
+    {
+      "name": "AI Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{aiBaseUrl}}/health",
+          "host": ["{{aiBaseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "AI Production Plan",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"payload\": {}\n}"
+        },
+        "url": {
+          "raw": "{{aiBaseUrl}}/ai/production-plan",
+          "host": ["{{aiBaseUrl}}"],
+          "path": ["ai", "production-plan"]
+        }
+      }
+    },
+    {
+      "name": "AI Delivery Risk",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"payload\": {}\n}"
+        },
+        "url": {
+          "raw": "{{aiBaseUrl}}/ai/delivery-risk",
+          "host": ["{{aiBaseUrl}}"],
+          "path": ["ai", "delivery-risk"]
+        }
+      }
+    },
+    {
+      "name": "AI Bottleneck",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"payload\": {}\n}"
+        },
+        "url": {
+          "raw": "{{aiBaseUrl}}/ai/bottleneck",
+          "host": ["{{aiBaseUrl}}"],
+          "path": ["ai", "bottleneck"]
+        }
+      }
+    },
+    {
+      "name": "AI Productivity",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"payload\": {}\n}"
+        },
+        "url": {
+          "raw": "{{aiBaseUrl}}/ai/productivity",
+          "host": ["{{aiBaseUrl}}"],
+          "path": ["ai", "productivity"]
+        }
+      }
+    },
+    {
+      "name": "AI Material Demand",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"payload\": {}\n}"
+        },
+        "url": {
+          "raw": "{{aiBaseUrl}}/ai/material-demand",
+          "host": ["{{aiBaseUrl}}"],
+          "path": ["ai", "material-demand"]
+        }
+      }
+    }
+  ]
+}
