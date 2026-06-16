@@ -54,7 +54,7 @@ export function ProductsPage() {
   const loadData = async (page = pagination.page, limit = pagination.limit) => {
     setLoading(true);
     try {
-      const data = await productService.list({
+      const response = await productService.list({
         page,
         limit,
         search,
@@ -63,8 +63,8 @@ export function ProductsPage() {
         sortBy: 'created_at',
         sortOrder: 'DESC',
       });
-      setRows(data.items);
-      setPagination(data.pagination);
+      setRows(response.data.items);
+      setPagination(response.data.pagination);
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.message ?? 'Khong tai duoc san pham' });
     } finally {

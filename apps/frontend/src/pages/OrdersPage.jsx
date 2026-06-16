@@ -36,21 +36,21 @@ export function OrdersPage() {
   const [error, setError] = useState('');
 
   const loadCustomers = async () => {
-    const data = await customerService.list({ limit: 100, isActive: true });
-    setCustomers(data.items);
+    const response = await customerService.list({ limit: 100, isActive: true });
+    setCustomers(response.data.items);
   };
 
   const loadData = async (page = pagination.page, limit = pagination.limit) => {
     setLoading(true);
     setError('');
     try {
-      const data = await orderService.list({
+      const response = await orderService.list({
         page,
         limit,
         ...Object.fromEntries(Object.entries(filters).filter(([, value]) => value)),
       });
-      setRows(data.items);
-      setPagination(data.pagination);
+      setRows(response.data.items);
+      setPagination(response.data.pagination);
     } catch (requestError) {
       setError(requestError.response?.data?.message ?? 'Khong tai duoc don hang');
     } finally {

@@ -54,7 +54,7 @@ export function CustomersPage() {
   const loadData = async (page = pagination.page, limit = pagination.limit) => {
     setLoading(true);
     try {
-      const data = await customerService.list({
+      const response = await customerService.list({
         page,
         limit,
         search,
@@ -62,8 +62,8 @@ export function CustomersPage() {
         sortBy: 'created_at',
         sortOrder: 'DESC',
       });
-      setRows(data.items);
-      setPagination(data.pagination);
+      setRows(response.data.items);
+      setPagination(response.data.pagination);
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.message ?? 'Khong tai duoc khach hang' });
     } finally {
