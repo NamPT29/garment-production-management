@@ -3,21 +3,21 @@ import axiosClient from '../api/axiosClient.js';
 export const shiftService = {
   async list(params = {}) {
     const response = await axiosClient.get('/shifts', { params });
-    return response.data;
+    return response;
   },
 
   async getById(id) {
     const response = await axiosClient.get(`/shifts/${id}`);
-    return response.data;
+    return response;
   },
 
   async create(payload) {
     const response = await axiosClient.post('/shifts', payload);
-    return response.data;
+    return response;
   },
 
   async update(id, payload) {
     const response = await axiosClient.put(`/shifts/${id}`, payload);
-    return response.data;
+    return response;
   },
 };

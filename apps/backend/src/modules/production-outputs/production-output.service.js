@@ -23,7 +23,11 @@ export const productionOutputService = {
     }
 
     if (!['RELEASED', 'IN_PROGRESS', 'PAUSED'].includes(po.status)) {
-      throw new AppError('Chỉ có thể ghi nhận sản lượng cho lệnh sản xuất đang hoạt động (RELEASED, IN_PROGRESS, PAUSED)', 400, 'PRODUCTION_ORDER_NOT_ACTIVE');
+      throw new AppError(
+        'Chỉ có thể ghi nhận sản lượng cho lệnh sản xuất đang hoạt động (RELEASED, IN_PROGRESS, PAUSED)',
+        400,
+        'PRODUCTION_ORDER_NOT_ACTIVE'
+      );
     }
 
     const sched = await productionPlanRepository.findScheduleById(payload.productionScheduleId);
@@ -40,7 +44,7 @@ export const productionOutputService = {
       );
     }
 
-    // Determine status transitions for PO
+    // Xác định trạng thái tiếp theo cho lệnh sản xuất
     let nextPoStatus = 'IN_PROGRESS';
     let actualEndDate = null;
     if (newCompleted >= po.plannedQuantity) {
@@ -54,50 +58,10 @@ export const productionOutputService = {
       actualEndDate: actualEndDate,
     };
 
-    // Calculate Snapshot progress
-    const startDate = new Date(po.plannedStartDate);
-    const endDate = new Date(po.plannedEndDate);
-    const snapshotDate = new Date(payload.outputDate);
-
-    const totalDays = Math.max(1, Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1);
-    const elapsedDays = Math.round((snapshotDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-
-    let expectedProgressPercent = 0;
-    if (elapsedDays >= totalDays) {
-      expectedProgressPercent = 100.00;
-    } else if (elapsedDays > 0) {
-      expectedProgressPercent = Number(((elapsedDays / totalDays) * 100).toFixed(2));
-    }
-
-    const expectedQty = Math.round((expectedProgressPercent * po.plannedQuantity) / 100);
-    const delayQuantity = Math.max(0, expectedQty - newCompleted);
-
-    let snapshotStatus = 'ON_TRACK';
-    if (newCompleted >= po.plannedQuantity) {
-      snapshotStatus = 'COMPLETED';
-    } else if (delayQuantity > 0) {
-      if (delayQuantity <= po.plannedQuantity * 0.1) {
-        snapshotStatus = 'AT_RISK';
-      } else {
-        snapshotStatus = 'DELAYED';
-      }
-    }
-
-    const snapshotData = {
-      snapshotDate: payload.outputDate,
-      plannedQuantity: po.plannedQuantity,
-      progressPercent: Number(((newCompleted / po.plannedQuantity) * 100).toFixed(2)),
-      expectedProgressPercent: expectedProgressPercent,
-      delayQuantity: delayQuantity,
-      status: snapshotStatus,
-    };
-
     try {
       const outputId = await productionOutputRepository.createOutputInTransaction({
         outputData: payload,
-        employeeOutputs: payload.employeeOutputs,
         poUpdate,
-        snapshotData,
         userId,
       });
 

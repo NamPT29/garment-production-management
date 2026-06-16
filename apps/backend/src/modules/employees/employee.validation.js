@@ -51,24 +51,3 @@ export const updateEmployeeSchema = z.object({
     userId: z.coerce.number().int().positive().optional().nullable(),
   }),
 });
-
-export const assignLineSchema = z.object({
-  params: z.object({
-    id: z.coerce.number().int().positive(),
-  }),
-  body: z.object({
-    productionLineId: z.coerce.number().int().positive(),
-    assignedFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Assigned from must be in YYYY-MM-DD format'),
-    assignedTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Assigned to must be in YYYY-MM-DD format').optional().nullable(),
-    isPrimary: z.boolean().default(true),
-    notes: z.string().trim().optional().nullable(),
-  }).refine(data => {
-    if (data.assignedTo && new Date(data.assignedTo) < new Date(data.assignedFrom)) {
-      return false;
-    }
-    return true;
-  }, {
-    message: 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu',
-    path: ['assignedTo']
-  }),
-});

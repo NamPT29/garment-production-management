@@ -35,23 +35,10 @@ import { productionProgressService } from '../services/productionProgressService
 export function ProductionOrderDetailPage() {
   const { id } = useParams();
   const [po, setPo] = useState(null);
-  const [allocations, setAllocations] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // Allocation dialog
-  const [openDialog, setOpenDialog] = useState(false);
-  const [lines, setLines] = useState([]);
-  const [formValues, setFormValues] = useState({
-    productionLineId: '',
-    allocatedQuantity: 0,
-    plannedStartDate: '',
-    plannedEndDate: '',
-    notes: '',
-  });
-  const [formErrors, setFormErrors] = useState({});
-  const [submitLoading, setSubmitLoading] = useState(false);
 
   // Snackbar
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -63,8 +50,8 @@ export function ProductionOrderDetailPage() {
       const orderRes = await productionOrderService.getById(id);
       setPo(orderRes.data);
 
-      const allocRes = await productionScheduleService.listAllocations({ productionOrderId: id });
-      setAllocations(allocRes.data);
+      const schedRes = await productionScheduleService.listSchedules({ productionOrderId: id });
+      setSchedules(schedRes.data ?? []);
 
       const histRes = await productionProgressService.getProgressHistory(id);
       setHistory(histRes.data);
@@ -78,69 +65,6 @@ export function ProductionOrderDetailPage() {
   useEffect(() => {
     loadDetail();
   }, [id]);
-
-  const loadLines = async () => {
-    try {
-      const response = await productionLineService.list({ status: 'ACTIVE' });
-      setLines(response.data);
-    } catch {
-      showSnackbar('Không tải được danh sách chuyền may', 'error');
-    }
-  };
-
-  const handleOpenAllocate = () => {
-    if (!po) return;
-    setFormValues({
-      productionLineId: '',
-      allocatedQuantity: po.plannedQuantity - allocations.reduce((sum, item) => sum + item.allocatedQuantity, 0),
-      plannedStartDate: po.plannedStartDate,
-      plannedEndDate: po.plannedEndDate,
-      notes: '',
-    });
-    setFormErrors({});
-    loadLines();
-    setOpenDialog(true);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormValues((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const validateForm = () => {
-    const errors = {};
-    if (!formValues.productionLineId) errors.productionLineId = 'Vui lòng chọn chuyền may';
-    if (Number(formValues.allocatedQuantity) <= 0) errors.allocatedQuantity = 'Số lượng phân bổ phải lớn hơn 0';
-    if (new Date(formValues.plannedEndDate) < new Date(formValues.plannedStartDate)) {
-      errors.plannedEndDate = 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu';
-    }
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
-    setSubmitLoading(true);
-    try {
-      const payload = {
-        productionOrderId: Number(id),
-        productionLineId: Number(formValues.productionLineId),
-        allocatedQuantity: Number(formValues.allocatedQuantity),
-        plannedStartDate: formValues.plannedStartDate,
-        plannedEndDate: formValues.plannedEndDate,
-        notes: formValues.notes.trim() || null,
-      };
-
-      await productionScheduleService.createAllocation(payload);
-      showSnackbar('Phân bổ sản xuất thành công', 'success');
-      setOpenDialog(false);
-      loadDetail();
-    } catch (err) {
-      showSnackbar(err.response?.data?.message ?? 'Lỗi phân bổ sản xuất', 'error');
-    } finally {
-      setSubmitLoading(false);
-    }
-  };
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -166,8 +90,7 @@ export function ProductionOrderDetailPage() {
   }
 
   const progressPercent = po.plannedQuantity > 0 ? (po.completedQuantity / po.plannedQuantity) * 100 : 0;
-  const totalAllocated = allocations.reduce((sum, item) => sum + item.allocatedQuantity, 0);
-  const remainingToAllocate = Math.max(0, po.plannedQuantity - totalAllocated);
+  const totalAllocated = schedules.reduce((sum, item) => sum + (item.allocatedQuantity ?? 0), 0);
 
   return (
     <Stack spacing={3}>
@@ -272,56 +195,54 @@ export function ProductionOrderDetailPage() {
           </Card>
         </Grid>
 
-        {/* Allocations to production lines */}
+        {/* Schedules */}
         <Grid item xs={12}>
           <Card variant="outlined" sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  Phân bổ chuyền may
+                  Kế hoạch sản xuất
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Đã phân bổ: {totalAllocated} / {po.plannedQuantity} (Còn lại cần phân bổ: {remainingToAllocate})
+                  Đã phân bổ: {totalAllocated} / {po.plannedQuantity} cái
                 </Typography>
               </Box>
-              {['DRAFT', 'PLANNED', 'RELEASED', 'IN_PROGRESS'].includes(po.status) && (
-                <Button
-                  variant="contained"
-                  startIcon={<Add />}
-                  onClick={handleOpenAllocate}
-                  disabled={remainingToAllocate === 0}
-                  sx={{ borderRadius: '8px', bgcolor: '#176b5b', '&:hover': { bgcolor: '#0f5245' } }}
-                >
-                  Phân bổ cho chuyền
-                </Button>
-              )}
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                component={Link}
+                to="/production-schedules/new"
+                sx={{ borderRadius: '8px', bgcolor: '#176b5b', '&:hover': { bgcolor: '#0f5245' } }}
+              >
+                Lập lịch mới
+              </Button>
             </Box>
 
-            {allocations.length === 0 ? (
+            {schedules.length === 0 ? (
               <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-                Lệnh sản xuất này chưa được phân bổ cho bất kỳ chuyền may nào.
+                Lệnh sản xuất này chưa có kế hoạch sản xuất nào.
               </Paper>
             ) : (
               <TableContainer component={Paper} variant="outlined">
                 <Table size="small">
                   <TableHead sx={{ bgcolor: '#f5f7f6' }}>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700 }}>Mã chuyền</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Tên chuyền may</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Chuyền may</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Ca làm việc</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Ngày sản xuất</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Số lượng phân bổ</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Thời gian sản xuất</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {allocations.map((alloc) => (
-                      <TableRow key={alloc.id}>
-                        <TableCell sx={{ fontWeight: 600 }}>{alloc.lineCode}</TableCell>
-                        <TableCell sx={{ fontWeight: 500 }}>{alloc.lineName}</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>{alloc.allocatedQuantity} cái</TableCell>
-                        <TableCell>{alloc.plannedStartDate} đến {alloc.plannedEndDate}</TableCell>
+                    {schedules.map((sched) => (
+                      <TableRow key={sched.id}>
+                        <TableCell sx={{ fontWeight: 500 }}>{sched.lineName}</TableCell>
+                        <TableCell>{sched.shiftName}</TableCell>
+                        <TableCell>{sched.scheduleDate}</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>{sched.allocatedQuantity} cái</TableCell>
                         <TableCell>
-                          <Chip label={alloc.status} size="small" color={alloc.status === 'COMPLETED' ? 'success' : 'default'} />
+                          <Chip label={sched.status} size="small" color={sched.status === 'COMPLETED' ? 'success' : sched.status === 'IN_PROGRESS' ? 'info' : 'default'} />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -388,80 +309,7 @@ export function ProductionOrderDetailPage() {
         </Grid>
       </Grid>
 
-      {/* Allocation Dialog */}
-      <Dialog open={openDialog} onClose={() => !submitLoading && setOpenDialog(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Phân bổ lệnh cho chuyền may</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              select
-              label="Chọn chuyền may"
-              name="productionLineId"
-              size="small"
-              value={formValues.productionLineId}
-              onChange={handleInputChange}
-              error={!!formErrors.productionLineId}
-              helperText={formErrors.productionLineId}
-              fullWidth
-              required
-            >
-              {lines.map((l) => (
-                <MenuItem key={l.id} value={l.id}>{l.lineName} ({l.lineCode})</MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="Số lượng phân bổ"
-              name="allocatedQuantity"
-              type="number"
-              size="small"
-              value={formValues.allocatedQuantity}
-              onChange={handleInputChange}
-              error={!!formErrors.allocatedQuantity}
-              helperText={formErrors.allocatedQuantity}
-              fullWidth
-              required
-            />
-            <TextField
-              label="Kế hoạch từ ngày"
-              name="plannedStartDate"
-              placeholder="YYYY-MM-DD"
-              size="small"
-              value={formValues.plannedStartDate}
-              onChange={handleInputChange}
-              fullWidth
-              required
-            />
-            <TextField
-              label="Kế hoạch đến ngày"
-              name="plannedEndDate"
-              placeholder="YYYY-MM-DD"
-              size="small"
-              value={formValues.plannedEndDate}
-              onChange={handleInputChange}
-              error={!!formErrors.plannedEndDate}
-              helperText={formErrors.plannedEndDate}
-              fullWidth
-              required
-            />
-            <TextField
-              label="Ghi chú phân bổ"
-              name="notes"
-              size="small"
-              value={formValues.notes}
-              onChange={handleInputChange}
-              multiline
-              rows={2}
-              fullWidth
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOpenDialog(false)} disabled={submitLoading}>Hủy</Button>
-          <Button variant="contained" onClick={handleSubmit} disabled={submitLoading} sx={{ bgcolor: '#176b5b', '&:hover': { bgcolor: '#0f5245' } }}>
-            {submitLoading ? 'Đang phân bổ...' : 'Xác nhận'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+
 
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar(p => ({ ...p, open: false }))}>
         <Alert severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>

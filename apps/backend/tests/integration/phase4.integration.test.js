@@ -7,11 +7,9 @@ const unique = Date.now();
 const adminCredentials = { identifier: 'admin', password: 'Admin@123456' };
 let adminToken;
 let lineId1, lineId2;
-let employeeId1;
 let shiftId1;
 let operationId1, operationId2;
 let productionOrderId;
-let allocationId1, allocationId2;
 let scheduleId;
 let customerId;
 let productId;
@@ -128,82 +126,7 @@ describe('phase 4 production APIs', () => {
     });
   });
 
-  // 2. EMPLOYEES
-  describe('Employees API', () => {
-    it('creates an employee', async () => {
-      const response = await request(app)
-        .post('/api/v1/employees')
-        .set(auth())
-        .send({
-          employeeCode: `EMP-T-${unique}-1`,
-          fullName: 'Nguyen Van Cong Nhan Test',
-          dateOfBirth: '1990-01-01',
-          gender: 'NAM',
-          phone: '0900000999',
-          email: `emp-${unique}@example.com`,
-          position: 'WORKER',
-          skillLevel: 'SKILLED',
-          status: 'ACTIVE',
-        })
-        .expect(201);
-
-      employeeId1 = response.body.data.id;
-      expect(response.body.data.employeeCode).toBe(`EMP-T-${unique}-1`);
-    });
-
-    it('rejects duplicate employee code', async () => {
-      await request(app)
-        .post('/api/v1/employees')
-        .set(auth())
-        .send({
-          employeeCode: `EMP-T-${unique}-1`,
-          fullName: 'Trung Ma',
-        })
-        .expect(409);
-    });
-
-    it('assigns employee to line', async () => {
-      await request(app)
-        .post(`/api/v1/employees/${employeeId1}/assign-line`)
-        .set(auth())
-        .send({
-          productionLineId: lineId1,
-          assignedFrom: '2026-06-01',
-          isPrimary: true,
-        })
-        .expect(201);
-    });
-
-    it('blocks dual active primary line assignment', async () => {
-      // Create line 2
-      const lineRes = await request(app)
-        .post('/api/v1/production-lines')
-        .set(auth())
-        .send({
-          lineCode: `LINE-${unique}-2`,
-          lineName: 'Chuyen may test 2',
-          targetWorkers: 5,
-          maximumWorkers: 10,
-        })
-        .expect(201);
-      lineId2 = lineRes.body.data.id;
-
-      // Assign to line 2 as primary should be blocked
-      const response = await request(app)
-        .post(`/api/v1/employees/${employeeId1}/assign-line`)
-        .set(auth())
-        .send({
-          productionLineId: lineId2,
-          assignedFrom: '2026-06-01',
-          isPrimary: true,
-        })
-        .expect(400);
-
-      expect(response.body.errorCode).toBe('DUAL_PRIMARY_ASSIGNMENT_BLOCKED');
-    });
-  });
-
-  // 3. SHIFTS
+  // 2. SHIFTS
   describe('Shifts API', () => {
     it('creates a shift', async () => {
       const response = await request(app)
@@ -236,7 +159,7 @@ describe('phase 4 production APIs', () => {
     });
   });
 
-  // 4. OPERATIONS
+  // 3. OPERATIONS
   describe('Operations API', () => {
     it('creates standard operation', async () => {
       const response = await request(app)
@@ -294,7 +217,7 @@ describe('phase 4 production APIs', () => {
     });
   });
 
-  // 5. PRODUCTION ORDERS
+  // 4. PRODUCTION ORDERS
   describe('Production Orders API', () => {
     it('creates a production order', async () => {
       const response = await request(app)
@@ -317,7 +240,6 @@ describe('phase 4 production APIs', () => {
     });
 
     it('blocks production order planned quantity exceeding order item quantity', async () => {
-      // Since order item has 100, we already planned 50. Creating another order with 60 should exceed 100 (50 + 60 = 110 > 100)
       await request(app)
         .post('/api/v1/production-orders')
         .set(auth())
@@ -333,116 +255,89 @@ describe('phase 4 production APIs', () => {
     });
   });
 
-  // 6. ALLOCATIONS & SCHEDULES
-  describe('Allocations & Schedules API', () => {
-    it('creates production allocation', async () => {
-      const response = await request(app)
-        .post('/api/v1/production-plans/allocations')
+  // 5. SCHEDULES (trực tiếp, không qua allocation)
+  describe('Schedules API', () => {
+    it('creates a second production line for conflict test', async () => {
+      const lineRes = await request(app)
+        .post('/api/v1/production-lines')
         .set(auth())
         .send({
-          productionOrderId: productionOrderId,
-          productionLineId: lineId1,
-          allocatedQuantity: 30,
-          plannedStartDate: '2026-06-16',
-          plannedEndDate: '2026-06-23',
+          lineCode: `LINE-${unique}-2`,
+          lineName: 'Chuyen may test 2',
+          targetWorkers: 5,
+          maximumWorkers: 10,
         })
         .expect(201);
-
-      allocationId1 = response.body.data.id;
+      lineId2 = lineRes.body.data.id;
     });
 
-    it('blocks allocation exceeding production order planned quantity', async () => {
-      // PO has 50 planned. We allocated 30. Allocating another 25 should exceed 50.
-      await request(app)
-        .post('/api/v1/production-plans/allocations')
-        .set(auth())
-        .send({
-          productionOrderId: productionOrderId,
-          productionLineId: lineId2,
-          allocatedQuantity: 25,
-          plannedStartDate: '2026-06-16',
-          plannedEndDate: '2026-06-23',
-        })
-        .expect(400);
-    });
-
-    it('creates schedule for line and shift', async () => {
+    it('creates schedule directly from production order', async () => {
       const response = await request(app)
         .post('/api/v1/production-plans/schedules')
         .set(auth())
         .send({
-          productionAllocationId: allocationId1,
+          productionOrderId: productionOrderId,
           productionLineId: lineId1,
           shiftId: shiftId1,
           scheduleDate: '2026-06-17',
+          allocatedQuantity: 30,
           targetQuantity: 10,
           plannedWorkers: 3,
+          plannedStartDate: '2026-06-16',
+          plannedEndDate: '2026-06-23',
           status: 'CONFIRMED',
         })
         .expect(201);
 
       scheduleId = response.body.data.id;
+      expect(response.body.data.productionOrderId).toBe(productionOrderId);
     });
 
-    it('assigns employee to schedule', async () => {
+    it('blocks allocation exceeding production order planned quantity', async () => {
+      // PO has 50 planned. We already allocated 30. Allocating another 25 should exceed 50.
       await request(app)
-        .post(`/api/v1/production-plans/schedules/${scheduleId}/assignments`)
-        .set(auth())
-        .send({
-          employeeId: employeeId1,
-          operationId: operationId1,
-          assignedQuantity: 10,
-        })
-        .expect(201);
-    });
-
-    it('blocks overlapping worker schedule assignments', async () => {
-      // Create line allocation 2 for same PO
-      const allocRes = await request(app)
-        .post('/api/v1/production-plans/allocations')
+        .post('/api/v1/production-plans/schedules')
         .set(auth())
         .send({
           productionOrderId: productionOrderId,
           productionLineId: lineId2,
-          allocatedQuantity: 15,
+          shiftId: shiftId1,
+          scheduleDate: '2026-06-18',
+          allocatedQuantity: 25,
+          targetQuantity: 10,
+          plannedWorkers: 3,
           plannedStartDate: '2026-06-16',
           plannedEndDate: '2026-06-23',
+          status: 'CONFIRMED',
         })
-        .expect(201);
-      allocationId2 = allocRes.body.data.id;
+        .expect(400);
+    });
 
-      // Create schedule 2 on line 2 for same date and shift
-      const schedRes = await request(app)
+    it('blocks duplicate line + shift + date schedule', async () => {
+      // Same line, same shift, same date as existing schedule
+      await request(app)
         .post('/api/v1/production-plans/schedules')
         .set(auth())
         .send({
-          productionAllocationId: allocationId2,
-          productionLineId: lineId2,
-          shiftId: shiftId1, // Same shift
-          scheduleDate: '2026-06-17', // Same date
+          productionOrderId: productionOrderId,
+          productionLineId: lineId1,
+          shiftId: shiftId1,
+          scheduleDate: '2026-06-17', // same date as existing
+          allocatedQuantity: 10,
           targetQuantity: 5,
           plannedWorkers: 2,
+          plannedStartDate: '2026-06-16',
+          plannedEndDate: '2026-06-23',
           status: 'CONFIRMED',
-        })
-        .expect(201);
-      const scheduleId2 = schedRes.body.data.id;
-
-      // Try assigning employeeId1 to scheduleId2 (should overlap shift 1 on same date)
-      await request(app)
-        .post(`/api/v1/production-plans/schedules/${scheduleId2}/assignments`)
-        .set(auth())
-        .send({
-          employeeId: employeeId1,
-          operationId: operationId1,
         })
         .expect(400);
     });
   });
 
-  // 7. OUTPUTS & SNAPSHOTS
-  describe('Production Outputs & Snapshots API', () => {
-    it('records production output report and generates progress snapshot', async () => {
-      // Update PO status to PLANNED first, then to RELEASED so outputs can be recorded
+  // 6. PRODUCTION OUTPUTS & COMPUTED PROGRESS
+  describe('Production Outputs & Progress API', () => {
+    it('records production output and updates order progress', async () => {
+      // Update PO status to PLANNED then RELEASED so outputs can be recorded
       await request(app)
         .patch(`/api/v1/production-orders/${productionOrderId}/status`)
         .set(auth())
@@ -469,21 +364,12 @@ describe('phase 4 production APIs', () => {
           reworkQuantity: 0,
           workingMinutes: 480,
           downtimeMinutes: 10,
-          employeeOutputs: [
-            {
-              employeeId: employeeId1,
-              operationId: operationId1,
-              goodQuantity: 10,
-              defectQuantity: 1,
-              workingMinutes: 480,
-            },
-          ],
         })
         .expect(201);
 
       expect(response.body.data.goodQuantity).toBe(10);
 
-      // Verify PO updated completed_quantity to 10
+      // Verify PO updated completed_quantity
       const poRes = await request(app)
         .get(`/api/v1/production-orders/${productionOrderId}`)
         .set(auth())
@@ -491,7 +377,7 @@ describe('phase 4 production APIs', () => {
       expect(poRes.body.data.completedQuantity).toBe(10);
       expect(poRes.body.data.status).toBe('IN_PROGRESS');
 
-      // Verify dashboard outputs
+      // Verify computed progress dashboard
       const dbRes = await request(app)
         .get('/api/v1/production-progress/dashboard')
         .set(auth())

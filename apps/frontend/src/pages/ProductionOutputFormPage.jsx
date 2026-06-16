@@ -162,14 +162,6 @@ export function ProductionOutputFormPage() {
         downtimeMinutes: Number(outputValues.downtimeMinutes),
         outputDate: outputValues.outputDate,
         notes: outputValues.notes.trim() || null,
-        employeeOutputs: employeeRows.map((r) => ({
-          employeeId: r.employeeId,
-          operationId: r.operationId,
-          goodQuantity: Number(r.goodQuantity),
-          defectQuantity: Number(r.defectQuantity),
-          workingMinutes: Number(r.workingMinutes),
-          notes: r.notes || null,
-        })),
       };
 
       await productionOutputService.create(payload);
@@ -318,61 +310,6 @@ export function ProductionOutputFormPage() {
                   />
                 </Grid>
 
-                {employeeRows.length > 0 && (
-                  <Grid item xs={12}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, mt: 2 }}>
-                      Báo cáo chi tiết sản lượng theo thợ may
-                    </Typography>
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table size="small">
-                        <TableHead sx={{ bgcolor: '#f5f7f6' }}>
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 700 }}>Thợ may</TableCell>
-                            <TableCell sx={{ fontWeight: 700 }}>Công đoạn ráp</TableCell>
-                            <TableCell sx={{ fontWeight: 700, width: 130 }}>Số cái đạt</TableCell>
-                            <TableCell sx={{ fontWeight: 700, width: 130 }}>Số cái lỗi</TableCell>
-                            <TableCell sx={{ fontWeight: 700, width: 130 }}>Giờ chạy (phút)</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {employeeRows.map((row, idx) => (
-                            <TableRow key={row.employeeId}>
-                              <TableCell sx={{ fontWeight: 500 }}>{row.fullName} ({row.employeeCode})</TableCell>
-                              <TableCell sx={{ color: '#176b5b', fontWeight: 600 }}>{row.operationName}</TableCell>
-                              <TableCell>
-                                <TextField
-                                  type="number"
-                                  size="small"
-                                  value={row.goodQuantity}
-                                  onChange={(e) => handleEmployeeRowChange(idx, 'goodQuantity', e.target.value)}
-                                  inputProps={{ min: 0 }}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  type="number"
-                                  size="small"
-                                  value={row.defectQuantity}
-                                  onChange={(e) => handleEmployeeRowChange(idx, 'defectQuantity', e.target.value)}
-                                  inputProps={{ min: 0 }}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  type="number"
-                                  size="small"
-                                  value={row.workingMinutes}
-                                  onChange={(e) => handleEmployeeRowChange(idx, 'workingMinutes', e.target.value)}
-                                  inputProps={{ min: 0 }}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Grid>
-                )}
 
                 <Grid item xs={12}>
                   <TextField

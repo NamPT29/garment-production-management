@@ -40,14 +40,14 @@ export function ProductionSchedulesPage() {
     setError('');
     try {
       const lineRes = await productionLineService.list({ status: 'ACTIVE' });
-      setLines(lineRes.data);
+      setLines(lineRes.data ?? []);
 
       const params = {
         productionLineId: lineFilter === 'all' ? undefined : Number(lineFilter),
         scheduleDate: dateFilter || undefined,
       };
       const schedRes = await productionScheduleService.listSchedules(params);
-      setSchedules(schedRes.data);
+      setSchedules(schedRes.data ?? []);
     } catch (err) {
       setError(err.response?.data?.message ?? 'Không tải được kế hoạch sản xuất ca');
     } finally {

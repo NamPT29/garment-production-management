@@ -4,6 +4,10 @@ import {
   Box,
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Paper,
   Stack,
@@ -54,14 +58,10 @@ export function ProductionOutputsPage() {
       const response = await productionOutputService.getById(output.id);
       setSelectedOutput(response.data);
     } catch {
-      showSnackbar('Không tải được chi tiết báo cáo nhân sự');
+      // Keep the list-level data if detail fails
     } finally {
       setDetailLoading(false);
     }
-  };
-
-  const showSnackbar = (message) => {
-    console.error(message);
   };
 
   return (
@@ -72,7 +72,7 @@ export function ProductionOutputsPage() {
             Báo cáo sản lượng sản xuất
           </Typography>
           <Typography color="text.secondary">
-            Bảng kê khai sản lượng hoàn thành tốt, sản phẩm lỗi hỏng, thời gian dừng chuyền và năng suất thợ.
+            Bảng kê khai sản lượng hoàn thành tốt, sản phẩm lỗi hỏng, thời gian dừng chuyền.
           </Typography>
         </Box>
         <Button
@@ -122,7 +122,7 @@ export function ProductionOutputsPage() {
                   </TableCell>
                   <TableCell>{out.downtimeMinutes} phút</TableCell>
                   <TableCell align="right">
-                    <IconButton color="info" onClick={() => handleOpenDetail(out)} title="Xem chi tiết năng suất thợ">
+                    <IconButton color="info" onClick={() => handleOpenDetail(out)} title="Xem chi tiết">
                       <Visibility />
                     </IconButton>
                   </TableCell>
@@ -141,49 +141,46 @@ export function ProductionOutputsPage() {
         <DialogContent dividers>
           {detailLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}><CircularProgress size={24} /></Box>
-          ) : !selectedOutput?.employeeOutputs || selectedOutput.employeeOutputs.length === 0 ? (
-            <Typography>Không có báo cáo chi tiết năng suất công nhân.</Typography>
-          ) : (
+          ) : selectedOutput ? (
             <Stack spacing={2}>
-              <Box sx={{ p: 2, bgcolor: '#f8faf9', borderRadius: '8px' }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
+              <Box sx={{ p: 2, bgcolor: '#f8faf9', borderRadius: '8px', border: '1px solid #d9e1dd' }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                  <Box>
                     <Typography variant="caption" color="text.secondary">Lệnh sản xuất</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedOutput?.productionOrderCode}</Typography>
-                  </Grid>
-                  <Grid item xs={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedOutput.productionOrderCode}</Typography>
+                  </Box>
+                  <Box>
                     <Typography variant="caption" color="text.secondary">Chuyền may</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedOutput?.lineName}</Typography>
-                  </Grid>
-                </Grid>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedOutput.lineName}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Ca làm việc</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedOutput.shiftName}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Sản phẩm</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedOutput.productName}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Số lượng đạt</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.main' }}>{selectedOutput.goodQuantity} cái</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Số lượng lỗi</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'error.main' }}>{selectedOutput.defectQuantity} cái</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Số lượng sửa lại</Typography>
+                    <Typography variant="body2">{selectedOutput.reworkQuantity ?? 0} cái</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Thời gian dừng chuyền</Typography>
+                    <Typography variant="body2">{selectedOutput.downtimeMinutes} phút</Typography>
+                  </Box>
+                </Box>
               </Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Chi tiết sản lượng theo nhân sự</Typography>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead sx={{ bgcolor: '#f5f7f6' }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 700 }}>Thợ may</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Công đoạn ráp</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>May đạt</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>May lỗi</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Thời gian (phút)</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {selectedOutput.employeeOutputs.map((eo) => (
-                      <TableRow key={eo.id}>
-                        <TableCell sx={{ fontWeight: 500 }}>{eo.fullName} ({eo.employeeCode})</TableCell>
-                        <TableCell sx={{ color: '#176b5b', fontWeight: 600 }}>{eo.operationName}</TableCell>
-                        <TableCell sx={{ fontWeight: 700, color: 'success.main' }}>{eo.goodQuantity} cái</TableCell>
-                        <TableCell sx={{ color: eo.defectQuantity > 0 ? 'error.main' : 'inherit' }}>{eo.defectQuantity} cái</TableCell>
-                        <TableCell>{eo.workingMinutes} phút</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
             </Stack>
-          )}
+          ) : null}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Đóng</Button>
@@ -191,9 +188,4 @@ export function ProductionOutputsPage() {
       </Dialog>
     </Stack>
   );
-}
-
-// grid helper
-function Grid({ children, ...props }) {
-  return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(12, 1fr)' }, gap: 2 }} {...props}>{children}</Box>;
 }

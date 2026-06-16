@@ -16,6 +16,12 @@ export const authorizeRoles = (...roles) => {
 export const authorizePermissions = (...permissions) => {
   return (req, _res, next) => {
     const userPermissions = req.user?.permissions ?? [];
+
+    // Wildcard '*' grants all permissions (e.g. ADMIN role)
+    if (userPermissions.includes('*')) {
+      return next();
+    }
+
     const hasPermission = permissions.every((permission) => userPermissions.includes(permission));
 
     if (!hasPermission) {

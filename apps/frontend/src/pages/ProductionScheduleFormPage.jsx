@@ -16,22 +16,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import { productionScheduleService } from '../services/productionScheduleService.js';
 import { productionLineService } from '../services/productionLineService.js';
 import { shiftService } from '../services/shiftService.js';
+import { productionOrderService } from '../services/productionOrderService.js';
 
 export function ProductionScheduleFormPage() {
   const navigate = useNavigate();
-  const [allocations, setAllocations] = useState([]);
+  const [productionOrders, setProductionOrders] = useState([]);
   const [lines, setLines] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [submitLoading, setSubmitLoading] = useState(false);
 
   // Form values
   const [formValues, setFormValues] = useState({
-    productionAllocationId: '',
+    productionOrderId: '',
     productionLineId: '',
     shiftId: '',
     scheduleDate: new Date().toISOString().slice(0, 10),
+    allocatedQuantity: 30,
     targetQuantity: 20,
     plannedWorkers: 5,
+    plannedStartDate: new Date().toISOString().slice(0, 10),
+    plannedEndDate: '',
     status: 'DRAFT',
     notes: '',
   });
@@ -42,14 +46,14 @@ export function ProductionScheduleFormPage() {
 
   const loadDropdowns = async () => {
     try {
-      const allocRes = await productionScheduleService.listAllocations({ status: 'PLANNED' });
-      setAllocations(allocRes.data);
-
-      const lineRes = await productionLineService.list({ status: 'ACTIVE' });
-      setLines(lineRes.data);
-
-      const shiftRes = await shiftService.list();
-      setShifts(shiftRes.data);
+      const [poRes, lineRes, shiftRes] = await Promise.all([
+        productionOrderService.list({ status: 'RELEASED' }),
+        productionLineService.list({ status: 'ACTIVE' }),
+        shiftService.list(),
+      ]);
+      setProductionOrders(poRes.data ?? []);
+      setLines(lineRes.data ?? []);
+      setShifts(shiftRes.data ?? []);
     } catch {
       showSnackbar('Không tải được danh mục phục vụ lập lịch', 'error');
     }
@@ -59,18 +63,6 @@ export function ProductionScheduleFormPage() {
     loadDropdowns();
   }, []);
 
-  const handleAllocationChange = (e) => {
-    const allocId = Number(e.target.value);
-    const selectedAlloc = allocations.find((a) => a.id === allocId);
-    if (selectedAlloc) {
-      setFormValues((prev) => ({
-        ...prev,
-        productionAllocationId: allocId,
-        productionLineId: selectedAlloc.productionLineId,
-      }));
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -78,10 +70,13 @@ export function ProductionScheduleFormPage() {
 
   const validateForm = () => {
     const errors = {};
-    if (!formValues.productionAllocationId) errors.productionAllocationId = 'Vui lòng chọn phân bổ sản xuất';
+    if (!formValues.productionOrderId) errors.productionOrderId = 'Vui lòng chọn lệnh sản xuất';
     if (!formValues.productionLineId) errors.productionLineId = 'Vui lòng chọn chuyền may';
     if (!formValues.shiftId) errors.shiftId = 'Vui lòng chọn ca làm việc';
     if (!formValues.scheduleDate) errors.scheduleDate = 'Vui lòng chọn ngày sản xuất';
+    if (!formValues.plannedStartDate) errors.plannedStartDate = 'Vui lòng chọn ngày bắt đầu';
+    if (!formValues.plannedEndDate) errors.plannedEndDate = 'Vui lòng chọn ngày kết thúc';
+    if (Number(formValues.allocatedQuantity) <= 0) errors.allocatedQuantity = 'Số lượng phân bổ phải lớn hơn 0';
     if (Number(formValues.targetQuantity) <= 0) errors.targetQuantity = 'Mục tiêu phải lớn hơn 0';
     if (Number(formValues.plannedWorkers) <= 0) errors.plannedWorkers = 'Số lượng công nhân phải lớn hơn 0';
     setFormErrors(errors);
@@ -94,12 +89,16 @@ export function ProductionScheduleFormPage() {
     setSubmitLoading(true);
     try {
       const payload = {
-        ...formValues,
-        productionAllocationId: Number(formValues.productionAllocationId),
+        productionOrderId: Number(formValues.productionOrderId),
         productionLineId: Number(formValues.productionLineId),
         shiftId: Number(formValues.shiftId),
+        scheduleDate: formValues.scheduleDate,
+        allocatedQuantity: Number(formValues.allocatedQuantity),
         targetQuantity: Number(formValues.targetQuantity),
         plannedWorkers: Number(formValues.plannedWorkers),
+        plannedStartDate: formValues.plannedStartDate,
+        plannedEndDate: formValues.plannedEndDate,
+        status: formValues.status,
         notes: formValues.notes.trim() || null,
       };
 
@@ -133,27 +132,29 @@ export function ProductionScheduleFormPage() {
       <Card variant="outlined" sx={{ p: 4 }}>
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={3}>
+            {/* Lệnh sản xuất */}
             <Grid item xs={12}>
               <TextField
                 select
-                label="Chọn phân bổ lệnh"
-                name="productionAllocationId"
+                label="Chọn lệnh sản xuất"
+                name="productionOrderId"
                 size="small"
-                value={formValues.productionAllocationId}
-                onChange={handleAllocationChange}
-                error={!!formErrors.productionAllocationId}
-                helperText={formErrors.productionAllocationId}
+                value={formValues.productionOrderId}
+                onChange={handleInputChange}
+                error={!!formErrors.productionOrderId}
+                helperText={formErrors.productionOrderId}
                 fullWidth
                 required
               >
-                {allocations.map((a) => (
-                  <MenuItem key={a.id} value={a.id}>
-                    {a.productionOrderCode} - {a.productName} ({a.lineName} - Qty: {a.allocatedQuantity})
+                {productionOrders.map((po) => (
+                  <MenuItem key={po.id} value={po.id}>
+                    {po.productionOrderCode} — {po.productName} (KH: {po.plannedQuantity}, HT: {po.completedQuantity ?? 0})
                   </MenuItem>
                 ))}
               </TextField>
             </Grid>
 
+            {/* Chuyền may */}
             <Grid item xs={12} md={6}>
               <TextField
                 select
@@ -165,13 +166,15 @@ export function ProductionScheduleFormPage() {
                 error={!!formErrors.productionLineId}
                 helperText={formErrors.productionLineId}
                 fullWidth
-                disabled // Auto filled from allocation
+                required
               >
                 {lines.map((l) => (
                   <MenuItem key={l.id} value={l.id}>{l.lineName}</MenuItem>
                 ))}
               </TextField>
             </Grid>
+
+            {/* Ca làm việc */}
             <Grid item xs={12} md={6}>
               <TextField
                 select
@@ -191,6 +194,7 @@ export function ProductionScheduleFormPage() {
               </TextField>
             </Grid>
 
+            {/* Ngày sản xuất */}
             <Grid item xs={12} md={4}>
               <TextField
                 type="date"
@@ -206,6 +210,24 @@ export function ProductionScheduleFormPage() {
                 required
               />
             </Grid>
+
+            {/* Số lượng phân bổ */}
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Số lượng phân bổ"
+                name="allocatedQuantity"
+                type="number"
+                size="small"
+                value={formValues.allocatedQuantity}
+                onChange={handleInputChange}
+                error={!!formErrors.allocatedQuantity}
+                helperText={formErrors.allocatedQuantity}
+                fullWidth
+                required
+              />
+            </Grid>
+
+            {/* Sản lượng mục tiêu */}
             <Grid item xs={12} md={4}>
               <TextField
                 label="Sản lượng mục tiêu ca"
@@ -220,6 +242,8 @@ export function ProductionScheduleFormPage() {
                 required
               />
             </Grid>
+
+            {/* Số công nhân */}
             <Grid item xs={12} md={4}>
               <TextField
                 label="Số công nhân kế hoạch"
@@ -235,6 +259,41 @@ export function ProductionScheduleFormPage() {
               />
             </Grid>
 
+            {/* Ngày bắt đầu kế hoạch */}
+            <Grid item xs={12} md={4}>
+              <TextField
+                type="date"
+                label="Ngày bắt đầu kế hoạch"
+                name="plannedStartDate"
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                value={formValues.plannedStartDate}
+                onChange={handleInputChange}
+                error={!!formErrors.plannedStartDate}
+                helperText={formErrors.plannedStartDate}
+                fullWidth
+                required
+              />
+            </Grid>
+
+            {/* Ngày kết thúc kế hoạch */}
+            <Grid item xs={12} md={4}>
+              <TextField
+                type="date"
+                label="Ngày kết thúc kế hoạch"
+                name="plannedEndDate"
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                value={formValues.plannedEndDate}
+                onChange={handleInputChange}
+                error={!!formErrors.plannedEndDate}
+                helperText={formErrors.plannedEndDate}
+                fullWidth
+                required
+              />
+            </Grid>
+
+            {/* Trạng thái */}
             <Grid item xs={12}>
               <TextField
                 select
@@ -250,6 +309,7 @@ export function ProductionScheduleFormPage() {
               </TextField>
             </Grid>
 
+            {/* Ghi chú */}
             <Grid item xs={12}>
               <TextField
                 label="Ghi chú kế hoạch ca"

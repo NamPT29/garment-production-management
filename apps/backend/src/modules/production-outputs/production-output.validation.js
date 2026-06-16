@@ -15,15 +15,6 @@ export const getProductionOutputSchema = z.object({
   }),
 });
 
-const employeeOutputItemSchema = z.object({
-  employeeId: z.coerce.number().int().positive('Mã nhân viên là bắt buộc'),
-  operationId: z.coerce.number().int().positive('Mã công đoạn là bắt buộc'),
-  goodQuantity: z.coerce.number().int().min(0, 'Số lượng đạt phải >= 0'),
-  defectQuantity: z.coerce.number().int().min(0, 'Số lượng lỗi phải >= 0'),
-  workingMinutes: z.coerce.number().int().min(0).default(0),
-  notes: z.string().trim().optional().nullable(),
-});
-
 export const createProductionOutputSchema = z.object({
   body: z.object({
     productionScheduleId: z.coerce.number().int().positive('Mã kế hoạch là bắt buộc'),
@@ -37,6 +28,5 @@ export const createProductionOutputSchema = z.object({
     workingMinutes: z.coerce.number().int().min(0, 'Thời gian làm việc phải >= 0').default(480),
     downtimeMinutes: z.coerce.number().int().min(0, 'Thời gian dừng chuyền phải >= 0').default(0),
     notes: z.string().trim().optional().nullable(),
-    employeeOutputs: z.array(employeeOutputItemSchema).min(1, 'Phải có báo cáo chi tiết sản lượng của ít nhất một nhân sự'),
   }),
 });

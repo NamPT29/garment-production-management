@@ -15,19 +15,19 @@ const mapOutput = (row) => {
     id: row.id,
     productionScheduleId: row.production_schedule_id,
     productionOrderId: row.production_order_id,
-    productionOrderCode: row.production_order_code, // Joined field
-    productId: row.product_id, // Joined field
-    productName: row.product_name, // Joined field
+    productionOrderCode: row.production_order_code,
+    productId: row.product_id,
+    productName: row.product_name,
     productionLineId: row.production_line_id,
-    lineCode: row.line_code, // Joined field
-    lineName: row.line_name, // Joined field
+    lineCode: row.line_code,
+    lineName: row.line_name,
     shiftId: row.shift_id,
-    shiftCode: row.shift_code, // Joined field
-    shiftName: row.shift_name, // Joined field
+    shiftCode: row.shift_code,
+    shiftName: row.shift_name,
     outputDate: toDateString(row.output_date),
     goodQuantity: Number(row.good_quantity ?? 0),
     defectQuantity: Number(row.defect_quantity ?? 0),
-    rework_quantity: Number(row.rework_quantity ?? 0),
+    reworkQuantity: Number(row.rework_quantity ?? 0),
     workingMinutes: Number(row.working_minutes ?? 0),
     downtimeMinutes: Number(row.downtime_minutes ?? 0),
     notes: row.notes,
@@ -62,7 +62,7 @@ export const productionOutputRepository = {
     const whereSql = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const rows = await query(
       `
-        SELECT po.*, 
+        SELECT po.*,
                pord.production_order_code, pord.product_id, p.product_name,
                pl.line_code, pl.line_name,
                s.shift_code, s.shift_name
@@ -82,7 +82,7 @@ export const productionOutputRepository = {
   async findById(id) {
     const rows = await query(
       `
-        SELECT po.*, 
+        SELECT po.*,
                pord.production_order_code, pord.product_id, p.product_name,
                pl.line_code, pl.line_name,
                s.shift_code, s.shift_name
@@ -96,15 +96,10 @@ export const productionOutputRepository = {
       `,
       [id]
     );
-    const output = mapOutput(rows[0]);
-    if (!output) return null;
-
-    output.employeeOutputs = [];
-
-    return output;
+    return mapOutput(rows[0]);
   },
 
-  async createOutputInTransaction({ outputData, employeeOutputs, poUpdate, snapshotData, userId }) {
+  async createOutputInTransaction({ outputData, poUpdate, userId }) {
     return transaction(async (connection) => {
       // 1. Lock Production Order for update
       const [poRows] = await connection.execute(
@@ -132,11 +127,11 @@ export const productionOutputRepository = {
         throw new Error('SCHEDULE_NOT_FOUND');
       }
 
-      // 3. Insert Production Output header
+      // 3. Insert Production Output
       const [outResult] = await connection.execute(
         `
           INSERT INTO production_outputs (
-            production_schedule_id, production_order_id, production_line_id, shift_id, output_date, 
+            production_schedule_id, production_order_id, production_line_id, shift_id, output_date,
             good_quantity, defect_quantity, rework_quantity, working_minutes, downtime_minutes, notes, recorded_by
           )
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -179,7 +174,7 @@ export const productionOutputRepository = {
         ]
       );
 
-      // 5. Update Schedule status
+      // 5. Update Schedule status to IN_PROGRESS if still CONFIRMED
       await connection.execute(
         `
           UPDATE production_schedules
@@ -188,8 +183,6 @@ export const productionOutputRepository = {
         `,
         [outputData.productionScheduleId]
       );
-
-
 
       return outputId;
     });

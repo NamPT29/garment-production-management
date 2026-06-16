@@ -132,8 +132,8 @@ export const productionProgressRepository = {
     const rows = await query(
       `
         SELECT id, employee_code, full_name, position
-        FROM employees
-        WHERE status = 'ACTIVE'
+        FROM users
+        WHERE employee_code IS NOT NULL AND employee_status = 'ACTIVE'
         ORDER BY employee_code ASC
         LIMIT 20
       `
