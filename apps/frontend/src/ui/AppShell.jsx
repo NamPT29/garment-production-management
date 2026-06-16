@@ -59,6 +59,25 @@ const navigationGroups = [
       { label: 'Kho hàng', icon: <Warehouse />, path: '/warehouses' },
     ],
   },
+  {
+    title: 'Danh mục sản xuất',
+    items: [
+      { label: 'Chuyền may', icon: <Warehouse />, path: '/production-lines' },
+      { label: 'Nhân sự', icon: <Group />, path: '/employees' },
+      { label: 'Ca làm việc', icon: <History />, path: '/shifts' },
+      { label: 'Công đoạn', icon: <SettingsSuggest />, path: '/operations' },
+    ],
+  },
+  {
+    title: 'Điều hành sản xuất',
+    items: [
+      { label: 'Lệnh sản xuất', icon: <Assignment />, path: '/production-orders' },
+      { label: 'Kế hoạch sản xuất', icon: <SettingsSuggest />, path: '/production-schedules' },
+      { label: 'Ghi nhận sản lượng', icon: <CallReceived />, path: '/production-outputs' },
+      { label: 'Theo dõi tiến độ', icon: <History />, path: '/production-progress' },
+      { label: 'Dashboard sản xuất', icon: <Equalizer />, path: '/production-dashboard' },
+    ],
+  },
 ];
 
 export function AppShell() {

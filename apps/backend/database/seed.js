@@ -67,6 +67,40 @@ const permissions = [
   ['INVENTORY_ADJUST', 'Dieu chinh ton kho'],
   ['INVENTORY_TRANSACTION_VIEW', 'Xem lich su giao dich kho'],
   ['MATERIAL_REQUIREMENT_VIEW', 'Xem nhu cau vat tu'],
+
+  // Phase 4 Permissions
+  ['PRODUCTION_LINE_VIEW', 'Xem chuyen may'],
+  ['PRODUCTION_LINE_CREATE', 'Tao chuyen may'],
+  ['PRODUCTION_LINE_UPDATE', 'Cap nhat chuyen may'],
+  ['PRODUCTION_LINE_DEACTIVATE', 'Ngung hoat dong chuyen may'],
+  ['EMPLOYEE_VIEW', 'Xem nhan su san xuat'],
+  ['EMPLOYEE_CREATE', 'Tao nhan su san xuat'],
+  ['EMPLOYEE_UPDATE', 'Cap nhat nhan su san xuat'],
+  ['EMPLOYEE_DEACTIVATE', 'Ngung hoat dong nhan su san xuat'],
+  ['EMPLOYEE_ASSIGN_LINE', 'Phan cong nhan vien vao chuyen'],
+  ['SHIFT_VIEW', 'Xem ca lam viec'],
+  ['SHIFT_CREATE', 'Tao ca lam viec'],
+  ['SHIFT_UPDATE', 'Cap nhat ca lam viec'],
+  ['OPERATION_VIEW', 'Xem danh muc cong doan'],
+  ['OPERATION_CREATE', 'Tao cong doan'],
+  ['OPERATION_UPDATE', 'Cap nhat cong doan'],
+  ['PRODUCT_OPERATION_MANAGE', 'Quan ly quy trinh cong doan san pham'],
+  ['PRODUCTION_ORDER_VIEW', 'Xem lenh san xuat'],
+  ['PRODUCTION_ORDER_CREATE', 'Tao lenh san xuat'],
+  ['PRODUCTION_ORDER_UPDATE', 'Cap nhat lenh san xuat'],
+  ['PRODUCTION_ORDER_RELEASE', 'Phat hanh lenh san xuat'],
+  ['PRODUCTION_ORDER_CANCEL', 'Huy lenh san xuat'],
+  ['PRODUCTION_PLAN_VIEW', 'Xem ke hoach san xuat'],
+  ['PRODUCTION_PLAN_CREATE', 'Tao ke hoach san xuat'],
+  ['PRODUCTION_PLAN_UPDATE', 'Cap nhat ke hoach san xuat'],
+  ['PRODUCTION_PLAN_CONFIRM', 'Xac nhan ke hoach san xuat'],
+  ['PRODUCTION_PLAN_ASSIGN_EMPLOYEE', 'Phan cong nhan su cho ke hoach'],
+  ['PRODUCTION_OUTPUT_VIEW', 'Xem bao cao san luong'],
+  ['PRODUCTION_OUTPUT_CREATE', 'Ghi nhan san luong thuc te'],
+  ['PRODUCTION_OUTPUT_UPDATE', 'Cap nhat phieu san luong'],
+  ['EMPLOYEE_OUTPUT_VIEW', 'Xem san luong ca nhan'],
+  ['PRODUCTION_PROGRESS_VIEW', 'Xem tien do san xuat'],
+  ['PRODUCTION_DASHBOARD_VIEW', 'Xem dashboard dieu hanh san xuat'],
 ];
 
 const rolePermissionMap = {
@@ -81,6 +115,16 @@ const rolePermissionMap = {
     'INVENTORY_VIEW',
     'INVENTORY_TRANSACTION_VIEW',
     'MATERIAL_REQUIREMENT_VIEW',
+    // Phase 4
+    'PRODUCTION_LINE_VIEW',
+    'EMPLOYEE_VIEW',
+    'SHIFT_VIEW',
+    'OPERATION_VIEW',
+    'PRODUCTION_ORDER_VIEW',
+    'PRODUCTION_PLAN_VIEW',
+    'PRODUCTION_OUTPUT_VIEW',
+    'PRODUCTION_PROGRESS_VIEW',
+    'PRODUCTION_DASHBOARD_VIEW',
   ],
   PRODUCTION_MANAGER: [
     'CUSTOMER_VIEW',
@@ -104,6 +148,39 @@ const rolePermissionMap = {
     'INVENTORY_VIEW',
     'INVENTORY_TRANSACTION_VIEW',
     'MATERIAL_REQUIREMENT_VIEW',
+    // Phase 4
+    'PRODUCTION_LINE_VIEW',
+    'PRODUCTION_LINE_CREATE',
+    'PRODUCTION_LINE_UPDATE',
+    'PRODUCTION_LINE_DEACTIVATE',
+    'EMPLOYEE_VIEW',
+    'EMPLOYEE_CREATE',
+    'EMPLOYEE_UPDATE',
+    'EMPLOYEE_DEACTIVATE',
+    'EMPLOYEE_ASSIGN_LINE',
+    'SHIFT_VIEW',
+    'SHIFT_CREATE',
+    'SHIFT_UPDATE',
+    'OPERATION_VIEW',
+    'OPERATION_CREATE',
+    'OPERATION_UPDATE',
+    'PRODUCT_OPERATION_MANAGE',
+    'PRODUCTION_ORDER_VIEW',
+    'PRODUCTION_ORDER_CREATE',
+    'PRODUCTION_ORDER_UPDATE',
+    'PRODUCTION_ORDER_RELEASE',
+    'PRODUCTION_ORDER_CANCEL',
+    'PRODUCTION_PLAN_VIEW',
+    'PRODUCTION_PLAN_CREATE',
+    'PRODUCTION_PLAN_UPDATE',
+    'PRODUCTION_PLAN_CONFIRM',
+    'PRODUCTION_PLAN_ASSIGN_EMPLOYEE',
+    'PRODUCTION_OUTPUT_VIEW',
+    'PRODUCTION_OUTPUT_CREATE',
+    'PRODUCTION_OUTPUT_UPDATE',
+    'EMPLOYEE_OUTPUT_VIEW',
+    'PRODUCTION_PROGRESS_VIEW',
+    'PRODUCTION_DASHBOARD_VIEW',
   ],
   WAREHOUSE: [
     'CUSTOMER_VIEW',
@@ -122,6 +199,9 @@ const rolePermissionMap = {
     'MATERIAL_REQUIREMENT_VIEW',
     'PRODUCT_VIEW',
     'ORDER_VIEW',
+    // Phase 4
+    'PRODUCTION_ORDER_VIEW',
+    'PRODUCTION_PLAN_VIEW',
   ],
   TECHNICIAN: [
     'MATERIAL_VIEW',
@@ -131,6 +211,11 @@ const rolePermissionMap = {
     'BOM_ACTIVATE',
     'BOM_DEACTIVATE',
     'MATERIAL_REQUIREMENT_VIEW',
+    // Phase 4
+    'PRODUCTION_LINE_VIEW',
+    'OPERATION_VIEW',
+    'PRODUCT_OPERATION_MANAGE',
+    'PRODUCTION_PLAN_VIEW',
   ],
   ACCOUNTING_ERP: [
     'CUSTOMER_VIEW',
@@ -148,12 +233,35 @@ const rolePermissionMap = {
     'MATERIAL_VIEW',
     'INVENTORY_VIEW',
     'MATERIAL_REQUIREMENT_VIEW',
+    // Phase 4
+    'PRODUCTION_LINE_VIEW',
+    'EMPLOYEE_VIEW',
+    'PRODUCTION_ORDER_VIEW',
+    'PRODUCTION_PLAN_VIEW',
+    'PRODUCTION_PLAN_ASSIGN_EMPLOYEE',
+    'PRODUCTION_OUTPUT_VIEW',
+    'PRODUCTION_OUTPUT_CREATE',
+    'EMPLOYEE_OUTPUT_VIEW',
+    'PRODUCTION_PROGRESS_VIEW',
   ],
   QC: [
     'PRODUCT_VIEW',
     'ORDER_VIEW',
     'MATERIAL_VIEW',
     'INVENTORY_VIEW',
+    // Phase 4
+    'PRODUCTION_ORDER_VIEW',
+    'PRODUCTION_PLAN_VIEW',
+    'PRODUCTION_OUTPUT_VIEW',
+  ],
+  HR: [
+    // Phase 4
+    'EMPLOYEE_VIEW',
+    'EMPLOYEE_CREATE',
+    'EMPLOYEE_UPDATE',
+    'EMPLOYEE_DEACTIVATE',
+    'EMPLOYEE_ASSIGN_LINE',
+    'SHIFT_VIEW',
   ],
 };
 
@@ -590,10 +698,330 @@ const run = async () => {
       );
     }
 
+    // === Phase 4 Seed Data ===
+    // 1. Seed Shifts
+    const shiftsData = [
+      ['SH-MORNING', 'Ca sang', '06:00:00', '14:00:00', 30, true, adminUser.id],
+      ['SH-AFTERNOON', 'Ca chieu', '14:00:00', '22:00:00', 30, true, adminUser.id],
+      ['SH-EVENING', 'Ca dem', '22:00:00', '06:00:00', 30, true, adminUser.id]
+    ];
+    for (const sh of shiftsData) {
+      await connection.execute(
+        `
+          INSERT INTO shifts (shift_code, shift_name, start_time, end_time, break_minutes, is_active, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            shift_name = VALUES(shift_name),
+            start_time = VALUES(start_time),
+            end_time = VALUES(end_time),
+            break_minutes = VALUES(break_minutes),
+            is_active = VALUES(is_active)
+        `,
+        sh
+      );
+    }
+    const [shiftRows] = await connection.execute('SELECT id, shift_code FROM shifts');
+    const shiftMap = Object.fromEntries(shiftRows.map((r) => [r.shift_code, r.id]));
+
+    // 2. Seed Operations
+    const operationsData = [
+      ['OP-CUT', 'Cat vai', 'Cat vai theo so do thiet ke', 60, 'MEDIUM', true, adminUser.id],
+      ['OP-SEW-COLLAR', 'May co ao', 'May rap co ao', 180, 'HIGH', true, adminUser.id],
+      ['OP-SEW-SLEEVE', 'May tay ao', 'May rap tay vao than ao', 120, 'MEDIUM', true, adminUser.id],
+      ['OP-SEW-BODY', 'May than ao', 'May rap than ao', 240, 'HIGH', true, adminUser.id],
+      ['OP-BUTTON', 'Dinh nut', 'Dinh nut va mo khuy', 90, 'LOW', true, adminUser.id]
+    ];
+    for (const op of operationsData) {
+      await connection.execute(
+        `
+          INSERT INTO operations (operation_code, operation_name, description, standard_time_seconds, difficulty_level, is_active, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            operation_name = VALUES(operation_name),
+            description = VALUES(description),
+            standard_time_seconds = VALUES(standard_time_seconds),
+            difficulty_level = VALUES(difficulty_level),
+            is_active = VALUES(is_active)
+        `,
+        op
+      );
+    }
+    const [opRows] = await connection.execute('SELECT id, operation_code FROM operations');
+    const opMap = Object.fromEntries(opRows.map((r) => [r.operation_code, r.id]));
+
+    // 3. Seed Production Lines
+    const linesData = [
+      ['PL-001', 'Chuyen may 01', 'Tang 1 - Zone A', 5, 10, 'ACTIVE', 'Chuyen chuyen may ao so mi', adminUser.id],
+      ['PL-002', 'Chuyen may 02', 'Tang 1 - Zone B', 5, 10, 'ACTIVE', 'Chuyen chuyen may quan tay', adminUser.id],
+      ['PL-003', 'Chuyen may 03', 'Tang 2 - Zone A', 5, 10, 'ACTIVE', 'Chuyen may jacket va thoi trang', adminUser.id]
+    ];
+    for (const line of linesData) {
+      await connection.execute(
+        `
+          INSERT INTO production_lines (line_code, line_name, location, target_workers, maximum_workers, status, description, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            line_name = VALUES(line_name),
+            location = VALUES(location),
+            target_workers = VALUES(target_workers),
+            maximum_workers = VALUES(maximum_workers),
+            status = VALUES(status),
+            description = VALUES(description)
+        `,
+        line
+      );
+    }
+    const [lineRows] = await connection.execute('SELECT id, line_code FROM production_lines');
+    const lineMap = Object.fromEntries(lineRows.map((r) => [r.line_code, r.id]));
+
+    // 4. Seed Employees
+    const employeesData = [
+      ['EMP-001', 'Nguyen Van To Truong', '1985-05-15', 'NAM', '0912345671', 'to_truong@example.com', 'Ho Chi Minh', '2020-01-10', 'LINE_LEADER', 'EXPERT', 'ACTIVE', adminUser.id],
+      ['EMP-002', 'Tran Thi Cong Nhan 1', '1990-08-20', 'NU', '0912345672', 'worker1@example.com', 'Ho Chi Minh', '2021-02-15', 'WORKER', 'SKILLED', 'ACTIVE', adminUser.id],
+      ['EMP-003', 'Tran Thi Cong Nhan 2', '1992-09-22', 'NU', '0912345673', 'worker2@example.com', 'Ho Chi Minh', '2021-02-15', 'WORKER', 'SKILLED', 'ACTIVE', adminUser.id],
+      ['EMP-004', 'Tran Thi Cong Nhan 3', '1991-03-10', 'NU', '0912345674', 'worker3@example.com', 'Ho Chi Minh', '2021-03-01', 'WORKER', 'INTERMEDIATE', 'ACTIVE', adminUser.id],
+      ['EMP-005', 'Tran Thi Cong Nhan 4', '1995-04-12', 'NU', '0912345675', 'worker4@example.com', 'Ho Chi Minh', '2021-03-01', 'WORKER', 'INTERMEDIATE', 'ACTIVE', adminUser.id],
+      ['EMP-006', 'Tran Thi Cong Nhan 5', '1996-06-18', 'NU', '0912345676', 'worker5@example.com', 'Ho Chi Minh', '2021-03-01', 'WORKER', 'BEGINNER', 'ACTIVE', adminUser.id],
+      ['EMP-007', 'Nguyen Van Cong Nhan 6', '1993-01-25', 'NAM', '0912345677', 'worker6@example.com', 'Ho Chi Minh', '2021-04-10', 'WORKER', 'SKILLED', 'ACTIVE', adminUser.id],
+      ['EMP-008', 'Nguyen Van Cong Nhan 7', '1994-07-14', 'NAM', '0912345678', 'worker7@example.com', 'Ho Chi Minh', '2021-04-10', 'WORKER', 'SKILLED', 'ACTIVE', adminUser.id],
+      ['EMP-009', 'Nguyen Van Cong Nhan 8', '1990-11-30', 'NAM', '0912345679', 'worker8@example.com', 'Ho Chi Minh', '2021-04-10', 'WORKER', 'INTERMEDIATE', 'ACTIVE', adminUser.id],
+      ['EMP-010', 'Nguyen Van Cong Nhan 9', '1992-12-05', 'NAM', '0912345680', 'worker9@example.com', 'Ho Chi Minh', '2021-05-01', 'WORKER', 'INTERMEDIATE', 'ACTIVE', adminUser.id],
+      ['EMP-011', 'Nguyen Van Cong Nhan 10', '1997-02-14', 'NAM', '0912345681', 'worker10@example.com', 'Ho Chi Minh', '2021-05-01', 'WORKER', 'BEGINNER', 'ACTIVE', adminUser.id],
+      ['EMP-012', 'Le Thi Cong Nhan 11', '1994-03-24', 'NU', '0912345682', 'worker11@example.com', 'Ho Chi Minh', '2022-01-10', 'WORKER', 'SKILLED', 'ACTIVE', adminUser.id],
+      ['EMP-013', 'Le Thi Cong Nhan 12', '1995-05-28', 'NU', '0912345683', 'worker12@example.com', 'Ho Chi Minh', '2022-01-10', 'WORKER', 'INTERMEDIATE', 'ACTIVE', adminUser.id],
+      ['EMP-014', 'Le Thi Cong Nhan 13', '1996-08-01', 'NU', '0912345684', 'worker13@example.com', 'Ho Chi Minh', '2022-02-01', 'WORKER', 'INTERMEDIATE', 'ACTIVE', adminUser.id],
+      ['EMP-015', 'Le Thi Cong Nhan 14', '1993-10-15', 'NU', '0912345685', 'worker14@example.com', 'Ho Chi Minh', '2022-02-01', 'WORKER', 'BEGINNER', 'ACTIVE', adminUser.id],
+      ['EMP-016', 'Le Thi Cong Nhan 15', '1998-04-05', 'NU', '0912345686', 'worker15@example.com', 'Ho Chi Minh', '2022-02-15', 'WORKER', 'BEGINNER', 'ACTIVE', adminUser.id]
+    ];
+    for (const emp of employeesData) {
+      await connection.execute(
+        `
+          INSERT INTO employees (
+            employee_code, full_name, date_of_birth, gender, phone, email, address, hire_date, position, skill_level, status, created_by
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            full_name = VALUES(full_name),
+            date_of_birth = VALUES(date_of_birth),
+            gender = VALUES(gender),
+            phone = VALUES(phone),
+            email = VALUES(email),
+            address = VALUES(address),
+            hire_date = VALUES(hire_date),
+            position = VALUES(position),
+            skill_level = VALUES(skill_level),
+            status = VALUES(status)
+        `,
+        emp
+      );
+    }
+    const [empRows] = await connection.execute('SELECT id, employee_code FROM employees');
+    const empMap = Object.fromEntries(empRows.map((r) => [r.employee_code, r.id]));
+
+    // 5. Seed Line Employee Assignments (Primary Assignments)
+    const [existingLineAssignments] = await connection.execute('SELECT COUNT(*) as count FROM line_employee_assignments');
+    if (existingLineAssignments[0].count === 0) {
+      const assignments = [
+        [lineMap['PL-001'], empMap['EMP-001'], '2026-01-01', true, 'Leader chuyen 1', adminUser.id],
+        [lineMap['PL-001'], empMap['EMP-002'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
+        [lineMap['PL-001'], empMap['EMP-003'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
+        [lineMap['PL-001'], empMap['EMP-004'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
+        [lineMap['PL-001'], empMap['EMP-005'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
+        [lineMap['PL-001'], empMap['EMP-006'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
+        [lineMap['PL-001'], empMap['EMP-007'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
+        [lineMap['PL-001'], empMap['EMP-008'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
+        [lineMap['PL-001'], empMap['EMP-009'], '2026-01-01', true, 'Cong nhan chuyen 1', adminUser.id],
+        [lineMap['PL-002'], empMap['EMP-010'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
+        [lineMap['PL-002'], empMap['EMP-011'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
+        [lineMap['PL-002'], empMap['EMP-012'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
+        [lineMap['PL-002'], empMap['EMP-013'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
+        [lineMap['PL-002'], empMap['EMP-014'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
+        [lineMap['PL-002'], empMap['EMP-015'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id],
+        [lineMap['PL-002'], empMap['EMP-016'], '2026-01-01', true, 'Cong nhan chuyen 2', adminUser.id]
+      ];
+      for (const assign of assignments) {
+        await connection.execute(
+          `
+            INSERT INTO line_employee_assignments (production_line_id, employee_id, assigned_from, is_primary, notes, created_by)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `,
+          assign
+        );
+      }
+    }
+
+    // 6. Seed Product Operations Flow for PRO-DEMO-001 (Ao so mi demo)
+    const [demoProductRows] = await connection.execute('SELECT id FROM products WHERE product_code = ?', ['PRO-DEMO-001']);
+    if (demoProductRows[0]) {
+      const pId = demoProductRows[0].id;
+      const productOps = [
+        [pId, opMap['OP-CUT'], 1, 60, 'BEGINNER', 'Cat vai theo mau thiet ke'],
+        [pId, opMap['OP-SEW-COLLAR'], 2, 180, 'SKILLED', 'May rap co ao'],
+        [pId, opMap['OP-SEW-SLEEVE'], 3, 120, 'INTERMEDIATE', 'May rap tay ao'],
+        [pId, opMap['OP-SEW-BODY'], 4, 240, 'SKILLED', 'May rap than ao'],
+        [pId, opMap['OP-BUTTON'], 5, 90, 'BEGINNER', 'Dinh nut ao']
+      ];
+      for (const po of productOps) {
+        await connection.execute(
+          `
+            INSERT INTO product_operations (product_id, operation_id, sequence_number, standard_time_seconds, required_skill_level, notes)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              standard_time_seconds = VALUES(standard_time_seconds),
+              required_skill_level = VALUES(required_skill_level),
+              notes = VALUES(notes)
+          `,
+          po
+        );
+      }
+    }
+
+    // 7. Seed Production Order
+    const [orderRows] = await connection.execute('SELECT id FROM orders WHERE order_code = ?', ['ORD-DEMO-001']);
+    if (orderRows[0] && demoProductRows[0]) {
+      const orderId = orderRows[0].id;
+      const pId = demoProductRows[0].id;
+      
+      const poCode = 'PO-2026-0001';
+      const [existingPO] = await connection.execute('SELECT id FROM production_orders WHERE production_order_code = ?', [poCode]);
+      let poId;
+      if (existingPO.length === 0) {
+        const [poResult] = await connection.execute(
+          `
+            INSERT INTO production_orders (
+              production_order_code, order_id, product_id, planned_quantity, completed_quantity, rejected_quantity, 
+              planned_start_date, planned_end_date, priority, status, notes, created_by, updated_by
+            )
+            VALUES (?, ?, ?, 100, 0, 0, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY), 'NORMAL', 'RELEASED', 'Lenh san xuat mau', ?, ?)
+          `,
+          [poCode, orderId, pId, adminUser.id, adminUser.id]
+        );
+        poId = poResult.insertId;
+      } else {
+        poId = existingPO[0].id;
+      }
+
+      // 8. Seed Production Allocations (allocate 60 to PL-001, 40 to PL-002)
+      const [existingAlloc] = await connection.execute('SELECT COUNT(*) as count FROM production_allocations WHERE production_order_id = ?', [poId]);
+      let allocId1, allocId2;
+      if (existingAlloc[0].count === 0) {
+        const [allocRes1] = await connection.execute(
+          `
+            INSERT INTO production_allocations (production_order_id, production_line_id, allocated_quantity, planned_start_date, planned_end_date, status, created_by)
+            VALUES (?, ?, 60, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY), 'PLANNED', ?)
+          `,
+          [poId, lineMap['PL-001'], adminUser.id]
+        );
+        allocId1 = allocRes1.insertId;
+
+        const [allocRes2] = await connection.execute(
+          `
+            INSERT INTO production_allocations (production_order_id, production_line_id, allocated_quantity, planned_start_date, planned_end_date, status, created_by)
+            VALUES (?, ?, 40, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY), 'PLANNED', ?)
+          `,
+          [poId, lineMap['PL-002'], adminUser.id]
+        );
+        allocId2 = allocRes2.insertId;
+      } else {
+        const [allocRows] = await connection.execute('SELECT id, production_line_id FROM production_allocations WHERE production_order_id = ?', [poId]);
+        const allocMap = Object.fromEntries(allocRows.map(r => [r.production_line_id, r.id]));
+        allocId1 = allocMap[lineMap['PL-001']];
+        allocId2 = allocMap[lineMap['PL-002']];
+      }
+
+      // 9. Seed Production Schedules
+      const [existingSched] = await connection.execute('SELECT COUNT(*) as count FROM production_schedules WHERE production_allocation_id IN (?, ?)', [allocId1, allocId2]);
+      let schedId1, schedId2;
+      if (existingSched[0].count === 0) {
+        const [schedRes1] = await connection.execute(
+          `
+            INSERT INTO production_schedules (production_allocation_id, production_line_id, shift_id, schedule_date, target_quantity, planned_workers, status, created_by)
+            VALUES (?, ?, ?, CURDATE(), 20, 5, 'CONFIRMED', ?)
+          `,
+          [allocId1, lineMap['PL-001'], shiftMap['SH-MORNING'], adminUser.id]
+        );
+        schedId1 = schedRes1.insertId;
+
+        const [schedRes2] = await connection.execute(
+          `
+            INSERT INTO production_schedules (production_allocation_id, production_line_id, shift_id, schedule_date, target_quantity, planned_workers, status, created_by)
+            VALUES (?, ?, ?, CURDATE(), 15, 5, 'CONFIRMED', ?)
+          `,
+          [allocId2, lineMap['PL-002'], shiftMap['SH-MORNING'], adminUser.id]
+        );
+        schedId2 = schedRes2.insertId;
+
+        // 10. Seed Schedule Employee Assignments
+        const sched1Assignments = [
+          [schedId1, empMap['EMP-002'], opMap['OP-CUT'], 20, adminUser.id],
+          [schedId1, empMap['EMP-003'], opMap['OP-SEW-COLLAR'], 20, adminUser.id],
+          [schedId1, empMap['EMP-004'], opMap['OP-SEW-SLEEVE'], 20, adminUser.id],
+          [schedId1, empMap['EMP-005'], opMap['OP-SEW-BODY'], 20, adminUser.id],
+          [schedId1, empMap['EMP-006'], opMap['OP-BUTTON'], 20, adminUser.id]
+        ];
+        for (const sa of sched1Assignments) {
+          await connection.execute(
+            `
+              INSERT INTO schedule_employee_assignments (production_schedule_id, employee_id, operation_id, assigned_quantity, created_by)
+              VALUES (?, ?, ?, ?, ?)
+            `,
+            sa
+          );
+        }
+
+        // 11. Seed Production Outputs
+        const [outRes1] = await connection.execute(
+          `
+            INSERT INTO production_outputs (production_schedule_id, production_order_id, production_line_id, shift_id, output_date, good_quantity, defect_quantity, rework_quantity, working_minutes, downtime_minutes, recorded_by)
+            VALUES (?, ?, ?, ?, CURDATE(), 18, 2, 1, 480, 20, ?)
+          `,
+          [schedId1, poId, lineMap['PL-001'], shiftMap['SH-MORNING'], adminUser.id]
+        );
+        const outId1 = outRes1.insertId;
+
+        // 12. Seed Employee Outputs
+        const empOutputs = [
+          [outId1, empMap['EMP-002'], opMap['OP-CUT'], 20, 0, 480],
+          [outId1, empMap['EMP-003'], opMap['OP-SEW-COLLAR'], 18, 2, 480],
+          [outId1, empMap['EMP-004'], opMap['OP-SEW-SLEEVE'], 19, 1, 480],
+          [outId1, empMap['EMP-005'], opMap['OP-SEW-BODY'], 18, 2, 480],
+          [outId1, empMap['EMP-006'], opMap['OP-BUTTON'], 20, 0, 480]
+        ];
+        for (const eo of empOutputs) {
+          await connection.execute(
+            `
+              INSERT INTO employee_outputs (production_output_id, employee_id, operation_id, good_quantity, defect_quantity, working_minutes)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `,
+            eo
+          );
+        }
+
+        // Update production order completed quantity to 18
+        await connection.execute(
+          `
+            UPDATE production_orders 
+            SET completed_quantity = 18, rejected_quantity = 2, status = 'IN_PROGRESS', actual_start_date = CURDATE()
+            WHERE id = ?
+          `,
+          [poId]
+        );
+
+        // 13. Seed Production Progress Snapshots
+        await connection.execute(
+          `
+            INSERT INTO production_progress_snapshots (production_order_id, snapshot_date, planned_quantity, completed_quantity, remaining_quantity, progress_percent, expected_progress_percent, delay_quantity, status)
+            VALUES (?, CURDATE(), 100, 18, 82, 18.00, 14.28, 0, 'ON_TRACK')
+          `,
+          [poId]
+        );
+      }
+    }
+
     await connection.execute(
       `
         INSERT INTO system_settings (setting_key, setting_value)
-        VALUES ('phase', 'phase3-inventory-bom')
+        VALUES ('phase', 'phase4-production')
         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
       `,
     );

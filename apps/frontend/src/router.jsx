@@ -25,6 +25,22 @@ import { IssueFormPage } from './pages/IssueFormPage.jsx';
 import { AdjustmentFormPage } from './pages/AdjustmentFormPage.jsx';
 import { MaterialRequirementPage } from './pages/MaterialRequirementPage.jsx';
 
+// Phase 4 Pages
+import { ProductionLinesPage } from './pages/ProductionLinesPage.jsx';
+import { EmployeesPage } from './pages/EmployeesPage.jsx';
+import { ShiftsPage } from './pages/ShiftsPage.jsx';
+import { OperationsPage } from './pages/OperationsPage.jsx';
+import { ProductionOrdersPage } from './pages/ProductionOrdersPage.jsx';
+import { ProductionOrderFormPage } from './pages/ProductionOrderFormPage.jsx';
+import { ProductionOrderDetailPage } from './pages/ProductionOrderDetailPage.jsx';
+import { ProductionSchedulesPage } from './pages/ProductionSchedulesPage.jsx';
+import { ProductionScheduleFormPage } from './pages/ProductionScheduleFormPage.jsx';
+import { ProductionScheduleDetailPage } from './pages/ProductionScheduleDetailPage.jsx';
+import { ProductionOutputsPage } from './pages/ProductionOutputsPage.jsx';
+import { ProductionOutputFormPage } from './pages/ProductionOutputFormPage.jsx';
+import { ProductionProgressPage } from './pages/ProductionProgressPage.jsx';
+import { ProductionDashboardPage } from './pages/ProductionDashboardPage.jsx';
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -118,6 +134,67 @@ export const router = createBrowserRouter([
       {
         path: 'inventory/adjustments/new',
         element: <AdjustmentFormPage />,
+      },
+      // Phase 4 Paths
+      {
+        path: 'production-lines',
+        element: <ProductionLinesPage />,
+      },
+      {
+        path: 'employees',
+        element: <EmployeesPage />,
+      },
+      {
+        path: 'shifts',
+        element: <ShiftsPage />,
+      },
+      {
+        path: 'operations',
+        element: <OperationsPage />,
+      },
+      {
+        path: 'production-orders',
+        element: <ProductionOrdersPage />,
+      },
+      {
+        path: 'production-orders/new',
+        element: <ProductionOrderFormPage mode="create" />,
+      },
+      {
+        path: 'production-orders/:id',
+        element: <ProductionOrderDetailPage />,
+      },
+      {
+        path: 'production-orders/:id/edit',
+        element: <ProductionOrderFormPage mode="edit" />,
+      },
+      {
+        path: 'production-schedules',
+        element: <ProductionSchedulesPage />,
+      },
+      {
+        path: 'production-schedules/new',
+        element: <ProductionScheduleFormPage />,
+      },
+      {
+        path: 'production-schedules/:id',
+        element: <ProductionScheduleDetailPage />,
+      },
+      {
+        path: 'production-outputs',
+        element: <ProductionOutputsPage />,
+      },
+      {
+        path: 'production-outputs/new',
+        element: <ProductionOutputFormPage />,
+      },
+      {
+        path: 'production-progress',
+        element: <ProductionProgressPage />,
+      },
+      {
+        path: 'production-dashboard',
+        element: <ProductionDashboardPage />,
       },
       {
         path: '*',
